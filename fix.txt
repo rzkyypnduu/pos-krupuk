@@ -1,0 +1,1855 @@
+<style>
+  #pos-root, #pos-root * { box-sizing: border-box; }
+  #pos-root {
+    --bg: #FBF6EC;
+    --surface: #FFFFFF;
+    --ink: #2C2016;
+    --ink-soft: #6B5D4F;
+    --accent: #C1812E;
+    --accent-dark: #9C6620;
+    --line: #E8DCC6;
+    --debt: #B5432E;
+    --debt-bg: #FBE9E4;
+    --paid: #4C7A52;
+    --paid-bg: #EAF3EA;
+    --mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+    font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15.5px;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0 0 60px 0;
+  }
+  #pos-root h1, #pos-root h2, #pos-root h3 { font-family: 'Fraunces', Georgia, serif; margin: 0; }
+  #pos-root .app-header {
+    padding: 12px 16px 9px;
+    border-bottom: 3px solid var(--ink);
+    background: linear-gradient(180deg, #FFF9EF, var(--bg));
+    position: sticky; top: 0; z-index: 20;
+  }
+  #pos-root .brand { display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+  #pos-root .brand-left { display:flex; align-items:center; gap:8px; }
+  #pos-root .cracker-icon { flex-shrink:0; width:20px; height:20px; }
+  #pos-root .app-header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  #pos-root .app-header .sub { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  #pos-root .save-indicator { font-size: 12px; color: var(--ink-soft); display:flex; align-items:center; gap:6px; }
+  #pos-root .save-dot { width:7px; height:7px; border-radius:50%; background: var(--paid); transition: background .2s; }
+  #pos-root .save-dot.saving { background: var(--accent); animation: pulse 0.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  #pos-root .month-switch {
+    display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;
+    background:#FFFDF9; border:1px solid var(--line); border-radius:9px; padding:6px 9px;
+  }
+  #pos-root .month-switch label { margin:0; font-size:13px; }
+  #pos-root .month-switch input[type="month"] { width:auto; padding:8px 10px; font-size:14.5px; }
+  #pos-root .month-switch .month-label { font-weight:700; font-size:15px; color: var(--accent-dark); }
+  #pos-root .month-nav-btn { font-family:inherit; background:transparent; border:1px solid var(--line); border-radius:6px; width:34px; height:34px; cursor:pointer; color:var(--ink-soft); font-size:16px; }
+  #pos-root .month-nav-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
+  #pos-root .month-switch input:disabled, #pos-root .month-nav-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  #pos-root .tabs {
+    display:flex; overflow-x:auto; gap:4px; padding: 10px 12px 0; background: var(--bg);
+    position: sticky; top: 0; z-index: 19; border-bottom: 1px solid var(--line);
+  }
+  #pos-root .tab-btn {
+    font-family: inherit; font-size: 15px; font-weight: 600; color: var(--ink-soft);
+    background: transparent; border: none; padding: 12px 16px; cursor: pointer;
+    border-bottom: 3px solid transparent; white-space: nowrap; flex-shrink:0;
+  }
+  #pos-root .tab-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
+  #pos-root .tab-btn:hover { color: var(--ink); }
+
+  #pos-root main { padding: 20px 26px 0; width: 100%; margin: 0; }
+  #pos-root .tab-panel { display:none; }
+  #pos-root .tab-panel.active { display:block; }
+
+  #pos-root .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 22px; margin-bottom: 18px;
+  }
+  #pos-root .card h2 { font-size: 19px; margin-bottom: 14px; }
+  #pos-root .card h3 { font-size: 15px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; }
+
+  #pos-root label { font-size: 16px; color: var(--ink-soft); font-weight:700; display:block; margin-bottom:6px; }
+  #pos-root input, #pos-root select {
+    font-family: inherit; font-size: 18px; padding: 13px 14px; border: 1px solid var(--line);
+    border-radius: 8px; background: #FFFDF9; color: var(--ink); width: 100%;
+  }
+  #pos-root input:focus, #pos-root select:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+  #pos-root .field { margin-bottom: 12px; }
+  #pos-root .field-row { display:flex; gap:12px; flex-wrap: wrap; }
+  #pos-root .field-row > .field { flex: 1; min-width: 150px; }
+  #pos-root .hint { font-size:13.5px; color: var(--ink-soft); margin: -4px 0 12px; }
+  #pos-root .hint.debt-hint { color: var(--debt); font-weight:600; }
+
+  #pos-root button.primary {
+    font-family: inherit; font-weight: 700; font-size: 15.5px; background: var(--accent);
+    color: #FFF8EE; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;
+  }
+  #pos-root button.primary:hover { background: var(--accent-dark); }
+  #pos-root button.ghost {
+    font-family: inherit; font-weight: 600; font-size: 14px; background: transparent;
+    color: var(--ink-soft); border: 1px solid var(--line); padding: 9px 14px; border-radius: 7px; cursor: pointer;
+  }
+  #pos-root button.ghost:hover { border-color: var(--ink-soft); color: var(--ink); }
+  #pos-root button.danger { color: var(--debt); }
+  #pos-root button.danger:hover { border-color: var(--debt); }
+
+  #pos-root table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  #pos-root th { text-align:left; font-size: 12.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-soft); border-bottom: 2px solid var(--line); padding: 9px 10px; }
+  #pos-root td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  #pos-root tr:last-child td { border-bottom: none; }
+  #pos-root tr.group-row td { background:#FFF6E8; font-weight:700; border-top: 2px solid var(--line); }
+  #pos-root .num { font-family: var(--mono); text-align: right; white-space: nowrap; }
+  #pos-root .table-wrap { overflow-x:auto; }
+
+  #pos-root .qty-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; margin: 10px 0; }
+  #pos-root .qty-item label { font-size: 15px; margin-bottom:5px; }
+  #pos-root .qty-item input { padding: 11px 12px; font-size: 16.5px; }
+
+  #pos-root .summary-line { display:flex; justify-content:space-between; padding: 8px 0; font-size: 15px; border-bottom: 1px dashed var(--line); }
+  #pos-root .summary-line:last-child { border-bottom:none; }
+  #pos-root .summary-line .val { font-family: var(--mono); font-weight:600; }
+  #pos-root .summary-line.total { font-weight:700; font-size: 17px; padding-top:12px; }
+
+  #pos-root .badge { display:inline-block; padding: 4px 11px; border-radius: 20px; font-size: 13px; font-weight:700; font-family: var(--mono); }
+  #pos-root .badge.debt { background: var(--debt-bg); color: var(--debt); }
+  #pos-root .badge.paid { background: var(--paid-bg); color: var(--paid); }
+  #pos-root .badge.zero { background: #EFEAE0; color: var(--ink-soft); }
+
+  #pos-root .stat-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 12px; }
+  #pos-root .stat-box { background: #FFFDF9; border: 1px solid var(--line); border-radius: 10px; padding: 15px 17px; }
+  #pos-root .stat-box .label { font-size: 13px; color: var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; }
+  #pos-root .stat-box .value { font-family: var(--mono); font-size: 22px; font-weight:700; margin-top:5px; }
+  #pos-root .stat-box.highlight { background: var(--ink); border-color: var(--ink); }
+  #pos-root .stat-box.highlight .label { color: #D9CBB2; }
+  #pos-root .stat-box.highlight .value { color: #FFF8EE; font-size: 26px; }
+
+  #pos-root .empty { text-align:center; padding: 26px 10px; color: var(--ink-soft); font-size: 14.5px; }
+  #pos-root .note { font-size: 13.5px; color: var(--ink-soft); margin-top: 9px; line-height:1.55; }
+  #pos-root .sub-section { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 14px; }
+  #pos-root .sub-section:first-child { border-top:none; padding-top:0; margin-top:0; }
+  #pos-root .row-actions { display:flex; gap:6px; }
+  #pos-root .warn-price { color: var(--debt); font-size: 11px; }
+
+  #pos-root .sack-row { display:flex; gap:8px; align-items:center; margin-bottom:7px; }
+  #pos-root .sack-row input { flex:1; }
+  #pos-root .sack-row .sack-remove-btn { flex-shrink:0; }
+
+  /* Section Header untuk Halaman Hasil */
+  #pos-root .section-header { margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--ink); }
+  #pos-root .section-header h2 { font-size: 22px; color: var(--ink); margin: 0 0 6px 0; }
+  #pos-root .section-header p { font-size: 14px; color: var(--ink-soft); margin: 0; }
+  #pos-root .section-header:first-child { margin-top: 0; }
+
+  /* Matrix table styling */
+  #hpSummaryTable th.mat-col { background: #FFF9EF; text-align: right; }
+  #hpSummaryTable td.mat-col { background: #FAFAFA; border-left: 1px dashed #E8DCC6; cursor:pointer; }
+  #hpSummaryTable td.mat-col:hover { background: #FFF3D6; }
+  #hpSummaryTable td.mat-col.empty-cell { cursor: default; }
+  #hpSummaryTable td.mat-col.empty-cell:hover { background: #FAFAFA; }
+  #hpSummaryTable .hp-toolbar { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  #pos-root .modal-backdrop { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(44,32,22,.52); }
+  #pos-root .modal-backdrop.open { display:flex; }
+  #pos-root .debt-modal { width:min(100%,480px); padding:0; overflow:hidden; border:1px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:0 24px 70px rgba(44,32,22,.28); }
+  #pos-root .debt-modal-head { padding:20px 22px; color:#FFF8EE; background:linear-gradient(135deg,var(--accent-dark),var(--accent)); }
+  #pos-root .debt-modal-head h2 { font-size:22px; }
+  #pos-root .debt-modal-head p { margin:5px 0 0; font-size:13px; opacity:.9; }
+  #pos-root .debt-modal-body { padding:20px 22px 22px; }
+  #pos-root .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+  #pos-root .debt-modal .field { margin-bottom:15px; }
+  #pos-root .debt-modal label { font-size:14px; margin-bottom:6px; }
+  #pos-root .debt-modal input { min-height:46px; font-size:16px; }
+  #pos-root .debt-modal .modal-actions { border-top:1px solid var(--line); padding-top:16px; margin-top:20px; }
+  @media (max-width: 520px) {
+    #pos-root .modal-backdrop { align-items:flex-end; padding:0; }
+    #pos-root .debt-modal { width:100%; border-radius:18px 18px 0 0; max-height:92vh; overflow:auto; }
+    #pos-root .debt-modal-head, #pos-root .debt-modal-body { padding-left:18px; padding-right:18px; }
+    #pos-root .modal-actions { flex-direction:column-reverse; }
+    #pos-root .modal-actions button { width:100%; }
+  }
+</style>
+
+<div id="pos-root">
+  <div class="app-header">
+    <div class="brand">
+      <div class="brand-left">
+        <svg class="cracker-icon" width="30" height="30" viewBox="0 0 30 30">
+          <circle cx="15" cy="15" r="13" fill="#E9C27A" stroke="#9C6620" stroke-width="1.5"/>
+          <circle cx="10" cy="10" r="1.4" fill="#9C6620"/>
+          <circle cx="15" cy="8" r="1.4" fill="#9C6620"/>
+          <circle cx="20" cy="10" r="1.4" fill="#9C6620"/>
+          <circle cx="9" cy="16" r="1.4" fill="#9C6620"/>
+          <circle cx="15" cy="15" r="1.4" fill="#9C6620"/>
+          <circle cx="21" cy="16" r="1.4" fill="#9C6620"/>
+          <circle cx="11" cy="21" r="1.4" fill="#9C6620"/>
+          <circle cx="19" cy="21" r="1.4" fill="#9C6620"/>
+        </svg>
+        <div>
+          <h1>POS Krupuk</h1>
+          <div class="sub">Penjualan harian, stok &amp; hutang &mdash; tersimpan di Google Sheets</div>
+        </div>
+      </div>
+      <div class="save-indicator"><span class="save-dot" id="saveDot"></span><span id="saveText">Tersimpan</span></div>
+    </div>
+    <div class="month-switch">
+      <button class="month-nav-btn" id="btnPrevMonth" title="Bulan sebelumnya">&larr;</button>
+      <label style="margin:0;">Bulan aktif</label>
+      <input type="month" id="bulanInput">
+      <span class="month-label" id="bulanLabelText"></span>
+      <button class="month-nav-btn" id="btnNextMonth" title="Bulan berikutnya">&rarr;</button>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="transaksi">Transaksi Harian</button>
+    <button class="tab-btn" data-tab="produk">Master Produk</button>
+    <button class="tab-btn" data-tab="hasil">Hasil</button>
+    <button class="tab-btn" data-tab="ringkasan">Ringkasan</button>
+  </nav>
+
+  <main>
+    <!-- ===================== TRANSAKSI HARIAN ===================== -->
+    <section class="tab-panel active" id="tab-transaksi">
+      <div class="card">
+        <h2>Catat Transaksi</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="txDate">Tanggal</label>
+            <input type="date" id="txDate">
+          </div>
+          <div class="field">
+            <label for="txName">Nama pelanggan</label>
+            <input type="text" id="txName" placeholder="Contoh: April" list="customerNames">
+            <datalist id="customerNames"></datalist>
+          </div>
+        </div>
+        <div class="hint" id="txOldDebtHint">Hutang lama pelanggan ini: Rp0</div>
+        <div id="qtyGridWrap">
+          <label>Jumlah per produk (kg)</label>
+          <div class="qty-grid" id="qtyGrid"></div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Total kg (sementara)</label>
+            <input type="text" id="txTotalKgSementara" disabled>
+          </div>
+          <div class="field">
+            <label>Total belanja (asli)</label>
+            <input type="text" id="txRawTotal" disabled>
+          </div>
+          <div class="field">
+            <label>Total tagihan dibulatkan</label>
+            <input type="text" id="txRoundedTotal" disabled>
+          </div>
+        </div>
+        <div class="sub-section">
+          <h3>Pembayaran</h3>
+          <div class="field-row">
+            <div class="field">
+              <label for="txPaid">Dibayar sekarang (Rp)</label>
+              <div style="display:flex; gap:6px;">
+                <input type="number" id="txPaid" min="0" step="500" placeholder="Kosongkan jika dihitung nanti" style="flex:1;">
+                <button type="button" class="ghost" id="btnFillLunas" style="flex-shrink:0;">Pas</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Status Hutang</label>
+              <div style="margin-top:8px;">
+                <span id="txDiffBadge" class="badge zero">Pas / Lunas</span>
+              </div>
+            </div>
+          </div>
+          <p class="note">Jika yang dibayar <b>lebih kecil</b> dari tagihan, akan menambah hutang. Jika <b>lebih besar</b>, otomatis memotong hutang lama. Tombol <b>Pas</b> mengisi otomatis sesuai tagihan.</p>
+        </div>
+        <div class="field">
+          <label for="txNote">Catatan (opsional)</label>
+          <input type="text" id="txNote" placeholder="opsional">
+        </div>
+        <div id="txEditBanner" class="hint" style="display:none; background:#FFF6E8; border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px;">
+          Mode bayar transaksi milik <strong id="txEditBannerName"></strong> tanggal <span id="txEditBannerDate"></span>. Isi pembayaran lalu simpan, atau klik Batal.
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="primary" id="btnSaveTx">Simpan transaksi</button>
+          <button class="ghost" id="btnCancelEditTx" style="display:none;">Batal</button>
+        </div>
+      </div>
+
+      <!-- CATAT PENGELUARAN -->
+      <div class="card">
+        <h2>Catat Pengeluaran Laci</h2>
+        <div class="field-row">
+          <div class="field">
+            <label>Tanggal</label>
+            <input type="date" id="expDate">
+          </div>
+          <div class="field">
+            <label>Jumlah uang diambil (Rp)</label>
+            <input type="number" id="expAmount" min="0" step="500">
+          </div>
+        </div>
+        <div class="field">
+          <label>Keperluan / Catatan</label>
+          <input type="text" id="expNote" placeholder="Contoh: beli bensin, makan, plastik">
+        </div>
+        <button class="primary" id="btnSaveExp" style="background: var(--ink); color: #FFF8EE;">Simpan pengeluaran</button>
+      </div>
+
+      <div class="card">
+        <h2>Transaksi pada tanggal ini</h2>
+        <div class="table-wrap">
+            <table id="txTable">
+              <thead><tr><th>Nama</th><th>Detail</th><th class="num">Total Kg</th><th class="num">Tagihan</th><th class="num">Dibayar</th><th>Status Hutang</th><th>Aksi</th></tr></thead>
+              <tbody></tbody>
+            </table>
+        </div>
+        <div id="txEmpty" class="empty">Belum ada transaksi tercatat pada tanggal ini.</div>
+      </div>
+
+      <div class="card">
+        <h2>Pengeluaran pada tanggal ini</h2>
+        <div class="table-wrap">
+            <table id="expTable">
+              <thead><tr><th>Keperluan</th><th class="num">Jumlah</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+        </div>
+        <div id="expEmpty" class="empty">Belum ada pengeluaran tercatat pada tanggal ini.</div>
+      </div>
+
+      <div class="card">
+        <h2>Rekap hari ini</h2>
+        <div class="table-wrap">
+          <table id="recapProductTable">
+            <thead><tr><th>Produk</th><th class="num">Total kg terjual</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="summary-line"><span>Total kg terjual (semua produk)</span><span class="val" id="recapTotalKg">0</span></div>
+          <div class="sub-section">
+            <div class="summary-line"><span>[+] Total diterima tunai</span><span class="val" style="color:var(--paid)" id="recapTotalDibayar">Rp0</span></div>
+            <div class="summary-line"><span>[-] Total pengeluaran laci</span><span class="val" style="color:var(--debt)" id="recapTotalPengeluaran">-Rp0</span></div>
+            <div class="summary-line total"><span>Sisa kas laci hari ini</span><span class="val" style="color:var(--paid)" id="recapKasBersih">Rp0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Rekap bulan ini &mdash; <span id="recapBulanLabel"></span></h2>
+        <div class="table-wrap">
+          <table id="recapProductTableBulan">
+            <thead><tr><th>Produk</th><th class="num">Total kg terjual</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="summary-line"><span>Total kg terjual bulan ini (semua produk)</span><span class="val" id="recapBulanTotalKg">0</span></div>
+          <div class="sub-section">
+            <div class="summary-line"><span>[+] Total diterima tunai bulan ini</span><span class="val" style="color:var(--paid)" id="recapBulanTotalDibayar">Rp0</span></div>
+            <div class="summary-line"><span>[-] Total pengeluaran bulan ini</span><span class="val" style="color:var(--debt)" id="recapBulanTotalPengeluaran">-Rp0</span></div>
+            <div class="summary-line total"><span>Sisa kas laci bulan ini</span><span class="val" style="color:var(--paid)" id="recapBulanKasBersih">Rp0</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MASTER PRODUK ===================== -->
+    <section class="tab-panel" id="tab-produk">
+      <div class="card">
+        <h2>Tambah produk</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="prodName">Nama produk</label>
+            <input type="text" id="prodName" placeholder="Contoh: Kabur">
+          </div>
+          <div class="field">
+            <label for="prodPrice">Harga per kg (Rp)</label>
+            <input type="number" id="prodPrice" min="0" step="500">
+          </div>
+        </div>
+        <button class="primary" id="btnAddProduct">Tambah produk</button>
+        <button class="ghost" id="btnSeedProducts" style="margin-left:8px;">Isi contoh nama produk dari catatan</button>
+      </div>
+      <div class="card">
+        <h2>Daftar produk</h2>
+        <div class="table-wrap">
+          <table id="prodTable">
+            <thead><tr><th>Nama</th><th class="num">Harga / kg</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="prodEmpty" class="empty">Belum ada produk. Tambahkan produk atau pakai tombol contoh di atas.</div>
+      </div>
+    </section>
+
+    <!-- ===================== HASIL ===================== -->
+    <section class="tab-panel" id="tab-hasil">
+
+      <!-- 1. HUTANG PELANGGAN -->
+      <div class="section-header">
+        <h2>1. Rekap Hutang Pelanggan</h2>
+        <p>Rekap bersifat kumulatif (semua waktu). Pembayaran memotong hutang yang paling kanan (terbaru) terlebih dahulu (LIFO). Klik pada angka hutang untuk mengubahnya secara manual.</p>
+      </div>
+
+      <div class="card">
+        <h2>Rekap hutang per pelanggan</h2>
+        <div class="hp-toolbar">
+          <button class="primary" id="btnAddHpRow">+ Tambah hutang</button>
+        </div>
+        <div class="table-wrap">
+          <table id="hpSummaryTable" style="white-space: nowrap;">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="hpEmpty" class="empty">Belum ada catatan hutang pelanggan.</div>
+        <div class="summary-line total"><span>Total hutang pelanggan (piutang toko)</span><span class="val" id="hpGrandTotal">Rp0</span></div>
+      </div>
+      
+      <div class="card" id="hpDetailCard" style="display:none;">
+        <h2 id="hpDetailTitle">Detail hutang</h2>
+        <div class="table-wrap">
+          <table id="hpDetailTable"><thead><tr><th>Tanggal</th><th>Jenis</th><th class="num">Jumlah</th><th class="num">Saldo berjalan</th><th>Catatan</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+        <button class="ghost" id="btnCloseHpDetail" style="margin-top:8px;">Tutup detail</button>
+      </div>
+
+      <!-- 2. STOK BARANG -->
+      <div class="section-header">
+        <h2>2. Stok Barang</h2>
+        <p>Data pada bagian ini menampilkan riwayat bulan aktif yang dipilih di bagian atas halaman.</p>
+      </div>
+
+      <div class="card sub-section">
+        <h3>Stok minyak</h3>
+        <div class="field-row">
+          <div class="field"><label>Tanggal</label><input type="date" id="oilDate"></div>
+          <div class="field"><label>Jumlah (liter/kg)</label><input type="number" id="oilQty" min="0" step="0.5"></div>
+          <div class="field"><label>Harga satuan (Rp)</label><input type="number" id="oilPrice" min="0" step="500"></div>
+          <div class="field" style="flex:0; align-self:flex-end;"><button class="primary" id="btnAddOil">Tambah</button></div>
+        </div>
+        <div class="table-wrap">
+          <table id="oilTable"><thead><tr><th>Tanggal</th><th class="num">Jumlah</th><th class="num">Harga</th><th class="num">Subtotal</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="summary-line total"><span>Total nilai stok minyak</span><span class="val" id="oilTotal">Rp0</span></div>
+      </div>
+
+      <div class="card sub-section">
+        <h3>Manajemen stok barang (per pemegang / gudang)</h3>
+        <div class="field-row">
+          <div class="field"><label>Tanggal</label><input type="date" id="stockMgmtDate"></div>
+          <div class="field"><label>Nama</label><input type="text" id="stockMgmtName" placeholder="Contoh: gun, imam" list="stockHolderNames"></div>
+          <datalist id="stockHolderNames"></datalist>
+          <div class="field"><label>Harga per kg (Rp)</label><input type="number" id="stockMgmtPrice" min="0" step="500"></div>
+        </div>
+        <div class="field">
+          <label>Kg per karung (boleh lebih dari satu karung)</label>
+          <div id="stockMgmtSackList"></div>
+          <button type="button" class="ghost" id="btnAddSackRow" style="margin-top:4px;">+ Tambah karung</button>
+        </div>
+        <div class="summary-line"><span>Total kg dari karung di atas</span><span class="val" id="stockMgmtSackTotal">0 kg</span></div>
+        <button class="primary" id="btnAddStockMgmt" style="margin-top:8px;">Tambah ke stok</button>
+        <div class="table-wrap" style="margin-top:14px;">
+          <table id="stockMgmtTable"><thead><tr><th>Tanggal</th><th>Nama</th><th class="num">Total (kg)</th><th class="num">Harga</th><th class="num">Subtotal</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+        <div id="stockMgmtEmpty" class="empty">Belum ada data.</div>
+
+        <div class="card" id="stockMgmtDetailCard" style="display:none; margin-top:14px; background:#FFFDF9;">
+          <h3 id="stockMgmtDetailTitle">Detail karung</h3>
+          <div class="table-wrap">
+            <table id="stockMgmtDetailTable">
+              <thead><tr><th>Tanggal</th><th>Berat per karung</th><th class="num">Total kg</th><th class="num">Harga</th><th class="num">Subtotal</th><th></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <button class="ghost" id="btnCloseStockMgmtDetail" style="margin-top:8px;">Tutup detail</button>
+        </div>
+        <div class="summary-line total" style="margin-top:10px;"><span>Total manajemen stok barang</span><span class="val" id="stockMgmtTotal">Rp0</span></div>
+      </div>
+
+      <div class="card sub-section">
+        <h3>Sisa barang hari ini</h3>
+        <div class="field-row">
+          <div class="field"><label>Tanggal</label><input type="date" id="remainDate"></div>
+          <div class="field">
+            <label>Produk</label>
+            <select id="remainProduct"></select>
+          </div>
+          <div class="field"><label>Jumlah (kg)</label><input type="number" id="remainQty" min="0" step="0.5"></div>
+          <div class="field"><label>Harga (Rp)</label><input type="number" id="remainPrice" min="0" step="500"></div>
+        </div>
+        <button class="primary" id="btnAddRemain">Tambah</button>
+        <div class="table-wrap" style="margin-top:10px;">
+          <table id="remainTable"><thead><tr><th>Tanggal</th><th>Produk</th><th class="num">Jumlah</th><th class="num">Harga</th><th class="num">Subtotal</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="summary-line total"><span>Total sisa barang hari ini</span><span class="val" id="remainTotal">Rp0</span></div>
+      </div>
+
+      <!-- 3. HUTANG PRIBADI -->
+      <div class="section-header">
+        <h2>3. Hutang Pribadi</h2>
+        <p>Data hutang pribadi mengikuti bulan aktif yang dipilih di bagian atas halaman.</p>
+      </div>
+
+      <div class="card">
+        <h2>Catat hutang pribadi</h2>
+        <div class="field-row">
+          <div class="field"><label>Tanggal</label><input type="date" id="hprDate"></div>
+          <div class="field"><label>Nama</label><input type="text" id="hprName"></div>
+          <div class="field"><label>Jumlah (Rp)</label><input type="number" id="hprAmount" min="0" step="500"></div>
+        </div>
+        <div class="field"><label>Catatan (opsional)</label><input type="text" id="hprNote"></div>
+        <button class="primary" id="btnAddHutangPri">Simpan</button>
+      </div>
+      <div class="card">
+        <h2>Daftar hutang pribadi (bulan ini)</h2>
+        <div class="table-wrap">
+          <table id="hprTable"><thead><tr><th>Tanggal</th><th>Nama</th><th class="num">Jumlah</th><th>Catatan</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+        <div id="hprEmpty" class="empty">Belum ada catatan hutang pribadi bulan ini.</div>
+        <div class="summary-line total"><span>Total hutang pribadi bulan ini</span><span class="val" id="hprGrandTotal">Rp0</span></div>
+      </div>
+
+      <!-- 4. PENGURANGAN SALDO -->
+      <div class="section-header">
+        <h2>4. Pengurangan Saldo</h2>
+        <p>Alat bantu hitung selisih saldo &mdash; angka bebas, terpisah dari perhitungan lain. Mengikuti bulan aktif.</p>
+      </div>
+
+      <div class="card">
+        <h2>Tambah catatan pengurangan saldo</h2>
+        <div class="field-row">
+          <div class="field"><label>Tanggal</label><input type="date" id="saldoDate"></div>
+          <div class="field"><label>Angka A</label><input type="number" id="saldoA" step="1"></div>
+          <div class="field"><label>Angka B</label><input type="number" id="saldoB" step="1"></div>
+        </div>
+        <div class="field"><label>Catatan (opsional)</label><input type="text" id="saldoNote"></div>
+        <button class="primary" id="btnAddSaldo">Simpan</button>
+      </div>
+      <div class="card">
+        <h2>Daftar pengurangan saldo (bulan ini)</h2>
+        <div class="table-wrap">
+          <table id="saldoTable"><thead><tr><th>Tanggal</th><th class="num">A</th><th class="num">B</th><th class="num">Hasil (A&minus;B)</th><th>Catatan</th><th></th></tr></thead><tbody></tbody></table>
+        </div>
+        <div id="saldoEmpty" class="empty">Belum ada catatan pengurangan saldo bulan ini.</div>
+        <div class="summary-line total"><span>Total hasil (A&minus;B) bulan ini</span><span class="val" id="saldoGrandTotal">0</span></div>
+      </div>
+    </section>
+
+    <!-- ===================== RINGKASAN ===================== -->
+    <section class="tab-panel" id="tab-ringkasan">
+      
+      <!-- KARTU 1: RINGKASAN NERACA HARI INI -->
+      <div class="card" id="ringkasanHariIniCard">
+        <div class="field-row" style="align-items:end; margin-bottom:14px;">
+          <div style="flex:1;"><h2 style="margin-bottom:4px;">Ringkasan neraca & stok</h2><div class="hint" style="margin:0;">Pilih tanggal untuk melihat ringkasan harian.</div></div>
+          <div class="field" style="margin:0; min-width:190px;"><label for="ringkasanDate">Tanggal ringkasan</label><input type="date" id="ringkasanDate"></div>
+        </div>
+        <h3 style="margin-bottom:14px;">Tanggal: <span id="ringkasanHariIniTanggal"></span></h3>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="label">Stok minyak (hari ini)</div><div class="value" id="hiOil">Rp0</div></div>
+          <div class="stat-box"><div class="label">Manajemen stok (hari ini)</div><div class="value" id="hiStockMgmt">Rp0</div></div>
+          <div class="stat-box"><div class="label">Sisa barang (hari ini)</div><div class="value" id="hiRemain">Rp0</div></div>
+          <div class="stat-box"><div class="label">Hutang pelanggan (bertambah hari ini)</div><div class="value" id="hiHutangPel">Rp0</div></div>
+          <div class="stat-box"><div class="label">Hutang pribadi (hari ini)</div><div class="value" id="hiHutangPri">Rp0</div></div>
+          <div class="stat-box"><div class="label">Pengurangan saldo (hari ini)</div><div class="value" id="hiSaldo">0</div></div>
+        </div>
+        <div class="stat-box highlight" style="margin-top:14px;">
+          <div class="label">Total penambahan aset hari ini</div>
+          <div class="value" id="hiGrand">Rp0</div>
+        </div>
+        <p class="note" id="hiNote" style="display:none; color:var(--debt);">Bulan aktif bukan bulan berjalan, ringkasan hari ini tidak tersedia. Silakan ganti bulan di bagian atas.</p>
+      </div>
+
+      <!-- KARTU 2: RINGKASAN NERACA TOTAL (BULANAN) -->
+      <div class="card">
+        <h2>Ringkasan neraca total (semua waktu/bulan) &mdash; <span id="ringkasanBulanLabel2"></span></h2>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="label">Total stok minyak</div><div class="value" id="sumOil">Rp0</div></div>
+          <div class="stat-box"><div class="label">Total manajemen stok barang</div><div class="value" id="sumStockMgmt">Rp0</div></div>
+          <div class="stat-box"><div class="label">Total sisa barang</div><div class="value" id="sumRemain">Rp0</div></div>
+          <div class="stat-box"><div class="label">Total hutang pelanggan (semua waktu)</div><div class="value" id="sumHutangPel">Rp0</div></div>
+          <div class="stat-box"><div class="label">Total hutang pribadi bulan ini</div><div class="value" id="sumHutangPri">Rp0</div></div>
+          <div class="stat-box"><div class="label">Pengurangan saldo bulan ini (A&minus;B)</div><div class="value" id="sumSaldo">0</div></div>
+        </div>
+        <div class="stat-box highlight" style="margin-top:14px;">
+          <div class="label">Total keseluruhan aset</div>
+          <div class="value" id="sumGrand">Rp0</div>
+        </div>
+        <p class="note">Rumus mengikuti catatan: total stok minyak + total manajemen stok barang + total hutang pelanggan + total sisa barang. Hutang pribadi dan pengurangan saldo ditampilkan terpisah sebagai informasi tambahan.</p>
+      </div>
+
+      <div class="card">
+        <h2>Kelola data</h2>
+        <button class="ghost danger" id="btnResetMonth">Hapus data bulan ini saja</button>
+        <button class="ghost danger" id="btnResetAll" style="margin-left:8px;">Hapus SEMUA data (semua bulan)</button>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="debtModal" aria-hidden="true">
+  <form class="debt-modal" id="debtForm">
+    <div class="debt-modal-head"><h2 id="debtModalTitle">Tambah hutang</h2><p id="debtModalSubtitle">Catatan hutang baru akan ditambahkan ke rekap.</p></div>
+    <div class="debt-modal-body">
+      <div class="field"><label for="debtModalName">Nama pelanggan</label><input id="debtModalName" type="text" required placeholder="Contoh: Mut"></div>
+      <div class="field"><label for="debtModalAmount">Jumlah hutang (Rp)</label><input id="debtModalAmount" type="number" min="0" step="500" required placeholder="0"></div>
+      <div class="field"><label for="debtModalDate">Tanggal</label><input id="debtModalDate" type="date" required></div>
+      <div class="field"><label for="debtModalNote">Catatan (opsional)</label><input id="debtModalNote" type="text" placeholder="Contoh: Hutang belanja"></div>
+      <div class="modal-actions"><button type="button" class="ghost" id="btnCloseDebtModal">Batal</button><button type="submit" class="primary">Simpan hutang</button></div>
+    </div>
+  </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Pengecekan jika file dibuka langsung dari komputer/HP (bukan lewat link Apps Script)
+  if (typeof google === 'undefined' || !google.script) {
+    alert("PERINGATAN: Anda membuka file HTML secara langsung (Offline). Data tidak akan tersimpan dan tidak akan sinkron dengan perangkat lain. Silakan buka melalui URL Web App dari Google Apps Script!");
+    window.google = { script: { run: { withSuccessHandler: function() { return this; }, withFailureHandler: function() { return this; }, saveData: function(){}, loadData: function(){}, listKeys: function(){}, deleteData: function(){} } } };
+  }
+
+  const KEYS = {
+    products: 'pos:products',
+    customerLedger: 'pos:customerLedger',
+    monthsList: 'pos:monthsList'
+  };
+  const MONTH_PREFIX = 'pos:month:';
+  const monthKey = (m) => MONTH_PREFIX + m;
+
+  const emptyMonthData = () => ({
+    sales: [], expenses: [], oilStock: [], stockMgmt: [], stockRemaining: [], personalLedger: [], saldoLog: []
+  });
+
+  let state = {
+    products: [],
+    customerLedger: [],
+    monthsList: [],
+    activeMonth: '',
+    month: emptyMonthData()
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const todayStr = () => new Date().toISOString().slice(0,10);
+  const currentMonthStr = () => todayStr().slice(0,7);
+  const rupiah = (n) => 'Rp' + Math.round(n||0).toLocaleString('id-ID');
+  const MONTH_NAMES = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  
+  function monthLabel(m){
+    if (!m) return '';
+    const [y, mm] = m.split('-');
+    return MONTH_NAMES[Number(mm)-1] + ' ' + y;
+  }
+
+  function roundTotal(total){
+    const thousands = Math.floor(total/1000)*1000;
+    const remainder = total - thousands;
+    return remainder < 500 ? thousands : thousands + 1000;
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : s;
+    return d.innerHTML;
+  }
+
+  let saveTimer = null;
+  function markSaving(){
+    $('saveDot').classList.add('saving');
+    $('saveText').textContent = 'Menyimpan...';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{
+      $('saveDot').classList.remove('saving');
+      $('saveText').textContent = 'Tersimpan';
+    }, 500);
+  }
+
+  let writeQueue = Promise.resolve();
+  let editingSaleId = null; 
+  function queueWrite(task){
+    const run = () => task();
+    writeQueue = writeQueue.then(run, run);
+    return writeQueue;
+  }
+
+  const GAS_Storage = {
+    set: (key, val) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).saveData(key, val)),
+    get: (key) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).loadData(key)),
+    list: (prefix) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).listKeys(prefix)),
+    delete: (key) => new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej).deleteData(key))
+  };
+
+  async function saveKey(key, value){
+    markSaving();
+    const payload = JSON.stringify(value); 
+    return queueWrite(async ()=>{
+      try {
+        await GAS_Storage.set(key, payload);
+      } catch(e){
+        console.error('Storage error saving', key, e);
+      }
+    });
+  }
+
+  async function loadKey(key, fallback){
+    try {
+      const result = await GAS_Storage.get(key);
+      if (result && typeof result.value === 'string') return JSON.parse(result.value);
+      return fallback;
+    } catch(e){
+      return fallback;
+    }
+  }
+
+  async function loadGlobal(){
+    state.products = await loadKey(KEYS.products, []);
+    state.customerLedger = await loadKey(KEYS.customerLedger, []);
+    state.monthsList = await loadKey(KEYS.monthsList, []);
+  }
+
+  async function ensureMonthRegistered(m){
+    if (!state.monthsList.includes(m)){
+      state.monthsList.push(m);
+      state.monthsList.sort();
+      await saveKey(KEYS.monthsList, state.monthsList);
+    }
+  }
+
+  const monthsCache = {};
+
+  async function loadMonth(m){
+    if (Object.prototype.hasOwnProperty.call(monthsCache, m)){
+      state.month = monthsCache[m];
+    } else {
+      const data = await loadKey(monthKey(m), null);
+      state.month = data || emptyMonthData();
+      state.month.sales = state.month.sales || [];
+      state.month.expenses = state.month.expenses || [];
+      state.month.oilStock = state.month.oilStock || [];
+      state.month.stockMgmt = state.month.stockMgmt || [];
+      state.month.stockMgmt = state.month.stockMgmt.map(o=>{
+        if (!o.batches) o.batches = [{ id: uid(), date: o.date, price: o.price, sacks: [o.qty||0] }];
+        return o;
+      });
+      state.month.stockRemaining = state.month.stockRemaining || [];
+      state.month.personalLedger = state.month.personalLedger || [];
+      state.month.saldoLog = state.month.saldoLog || [];
+      monthsCache[m] = state.month;
+    }
+    state.activeMonth = m;
+    await ensureMonthRegistered(m);
+  }
+
+  async function saveMonth(){
+    monthsCache[state.activeMonth] = state.month; 
+    await saveKey(monthKey(state.activeMonth), state.month);
+  }
+
+  function updateMonthUI(){
+    $('bulanInput').value = state.activeMonth;
+    $('bulanLabelText').textContent = monthLabel(state.activeMonth);
+    $('recapBulanLabel').textContent = monthLabel(state.activeMonth);
+  }
+
+  let monthSwitchLock = false;
+  function setMonthControlsDisabled(disabled){
+    $('bulanInput').disabled = disabled;
+    $('btnPrevMonth').disabled = disabled;
+    $('btnNextMonth').disabled = disabled;
+  }
+
+  async function switchToMonth(m, opts){
+    opts = opts || {};
+    if (!m || m === state.activeMonth) return;
+    if (monthSwitchLock) return; 
+    monthSwitchLock = true;
+    setMonthControlsDisabled(true);
+    try {
+      await saveMonth(); 
+      await loadMonth(m);
+      updateMonthUI();
+      if (!opts.keepTxDate){
+        if (!$('txDate').value || $('txDate').value.slice(0,7) !== m){
+          $('txDate').value = (m === currentMonthStr()) ? todayStr() : (m + '-01');
+          $('expDate').value = $('txDate').value;
+        }
+      }
+      renderAll();
+    } finally {
+      monthSwitchLock = false;
+      setMonthControlsDisabled(false);
+    }
+  }
+
+  $('bulanInput').addEventListener('change', async ()=>{
+    const val = $('bulanInput').value;
+    if (val && val !== state.activeMonth) await switchToMonth(val);
+  });
+  $('btnPrevMonth').addEventListener('click', async ()=>{
+    const [y,m] = state.activeMonth.split('-').map(Number);
+    const d = new Date(y, m-2, 1);
+    const nm = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    await switchToMonth(nm);
+  });
+  $('btnNextMonth').addEventListener('click', async ()=>{
+    const [y,m] = state.activeMonth.split('-').map(Number);
+    const d = new Date(y, m, 1);
+    const nm = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    await switchToMonth(nm);
+  });
+
+  // ---------- TABS ----------
+  document.querySelectorAll('#pos-root .tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#pos-root .tab-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('#pos-root .tab-panel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      $('tab-'+btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'ringkasan') renderRingkasanCard();
+    });
+  });
+
+  // ---------- PRODUK (global) ----------
+  function renderProducts(){
+    const tbody = $('prodTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    $('prodEmpty').style.display = state.products.length ? 'none' : 'block';
+    state.products.forEach(p=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(p.name)}</td>
+        <td class="num">${p.price ? rupiah(p.price) : '<span class="warn-price">belum diatur</span>'}</td>
+        <td class="row-actions"><button class="ghost" data-edit="${p.id}">Ubah harga</button><button class="ghost danger" data-del="${p.id}">Hapus</button></td>`;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+      state.products = state.products.filter(p=>p.id!==b.dataset.del);
+      await saveKey(KEYS.products, state.products);
+      renderProducts(); renderQtyGrid(); renderRemainProductOptions();
+    }));
+    tbody.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', async ()=>{
+      const p = state.products.find(x=>x.id===b.dataset.edit);
+      const newPrice = prompt('Harga per kg baru untuk "'+p.name+'":', p.price||0);
+      if (newPrice === null) return;
+      p.price = Number(newPrice)||0;
+      await saveKey(KEYS.products, state.products);
+      renderProducts(); renderQtyGrid(); renderRemainProductOptions();
+    }));
+  }
+  $('btnAddProduct').addEventListener('click', async ()=>{
+    const name = $('prodName').value.trim();
+    const price = Number($('prodPrice').value)||0;
+    if (!name) { alert('Isi nama produk dulu.'); return; }
+    state.products.push({ id: uid(), name, price });
+    await saveKey(KEYS.products, state.products);
+    $('prodName').value=''; $('prodPrice').value='';
+    renderProducts(); renderQtyGrid(); renderRemainProductOptions();
+  });
+  $('btnSeedProducts').addEventListener('click', async ()=>{
+    const names = ['Kuning','Lempeng','Kabur','Flowning','Gelung','Kecil OM','Kecil MJ','PJO','Kecil 2','TG','TG Mini','Drg','Lj','Uren','TM'];
+    const existing = new Set(state.products.map(p=>p.name.toLowerCase()));
+    names.forEach(n=>{
+      if (!existing.has(n.toLowerCase())) state.products.push({ id: uid(), name: n, price: 0 });
+    });
+    await saveKey(KEYS.products, state.products);
+    renderProducts(); renderQtyGrid(); renderRemainProductOptions();
+  });
+
+  // ---------- TRANSAKSI HARIAN ----------
+  function renderQtyGrid(){
+    const wrap = $('qtyGrid');
+    wrap.innerHTML = '';
+    if (!state.products.length){
+      wrap.innerHTML = '<div class="empty">Tambahkan produk dulu di tab Master Produk.</div>';
+      return;
+    }
+    state.products.forEach(p=>{
+      const div = document.createElement('div');
+      div.className = 'qty-item';
+      div.innerHTML = `<label>${escapeHtml(p.name)}</label><input type="number" min="0" step="0.5" data-prod="${p.id}" class="qty-input">`;
+      wrap.appendChild(div);
+    });
+    wrap.querySelectorAll('.qty-input').forEach(inp=>inp.addEventListener('input', updateTxCalc));
+  }
+
+  function currentTxItems(){
+    const items = [];
+    document.querySelectorAll('#qtyGrid .qty-input').forEach(inp=>{
+      const qty = Number(inp.value);
+      if (qty > 0){
+        const prod = state.products.find(p=>p.id===inp.dataset.prod);
+        if (prod) items.push({ productId: prod.id, name: prod.name, qty, price: prod.price||0 });
+      }
+    });
+    return items;
+  }
+
+  function customerBalances(){
+    const map = {};
+    state.customerLedger.forEach(l=>{
+      if (!map[l.name]) map[l.name] = 0;
+      map[l.name] += (l.type==='tambah' ? l.amount : -l.amount);
+    });
+    return map;
+  }
+
+  function updateTxCalc(){
+    const items = currentTxItems();
+    const totalKg = items.reduce((s,i)=> s + i.qty, 0);
+    const raw = items.reduce((s,i)=> s + i.qty*i.price, 0);
+    const rounded = roundTotal(raw);
+    $('txTotalKgSementara').value = totalKg + ' kg';
+    $('txRawTotal').value = rupiah(raw);
+    $('txRoundedTotal').value = rupiah(rounded);
+
+    const paid = Number($('txPaid').value)||0;
+    const diff = rounded - paid;
+
+    const badge = $('txDiffBadge');
+    if (!$('txPaid').value){
+      badge.className = 'badge debt';
+      badge.textContent = 'Belum dibayar (hutang penuh): ' + rupiah(rounded);
+    } else if (diff > 0){
+      badge.className = 'badge debt';
+      badge.textContent = 'Hutang bertambah: ' + rupiah(diff);
+    } else if (diff < 0){
+      badge.className = 'badge paid';
+      badge.textContent = 'Potong hutang: ' + rupiah(-diff);
+    } else {
+      badge.className = 'badge zero';
+      badge.textContent = 'Pas / Lunas';
+    }
+  }
+  $('txPaid').addEventListener('input', updateTxCalc);
+  $('btnFillLunas').addEventListener('click', ()=>{
+    const items = currentTxItems();
+    const raw = items.reduce((s,i)=> s + i.qty*i.price, 0);
+    const rounded = roundTotal(raw);
+    $('txPaid').value = rounded;
+    updateTxCalc();
+  });
+
+  function updateOldDebtHint(){
+    const name = $('txName').value.trim();
+    const el = $('txOldDebtHint');
+    if (!name){ el.textContent = 'Hutang lama pelanggan ini: Rp0'; el.classList.remove('debt-hint'); return; }
+    const bal = customerBalances()[name] || 0;
+    if (bal > 0){
+      el.textContent = 'Hutang lama pelanggan ini: ' + rupiah(bal);
+      el.classList.add('debt-hint');
+    } else if (bal < 0){
+      el.textContent = 'Pelanggan ini punya deposit / uang lebih: ' + rupiah(-bal);
+      el.classList.remove('debt-hint');
+    } else {
+      el.textContent = 'Hutang lama pelanggan ini: Rp0 (lunas)';
+      el.classList.remove('debt-hint');
+    }
+  }
+  $('txName').addEventListener('input', updateOldDebtHint);
+
+  function resetTxForm(){
+    editingSaleId = null;
+    $('txName').value = '';
+    $('txNote').value = '';
+    document.querySelectorAll('#qtyGrid .qty-input').forEach(i=>i.value='');
+    $('txPaid').value = '';
+    $('txTotalKgSementara').value = '';
+    $('txRawTotal').value = ''; $('txRoundedTotal').value='';
+    $('txDiffBadge').className='badge zero'; $('txDiffBadge').textContent='Pas / Lunas';
+    setEditModeUI(false);
+    updateOldDebtHint();
+  }
+
+  function setEditModeUI(isEditing, tx){
+    const banner = $('txEditBanner');
+    const cancelBtn = $('btnCancelEditTx');
+    const saveBtn = $('btnSaveTx');
+    if (isEditing && tx){
+      banner.style.display = 'block';
+      $('txEditBannerName').textContent = tx.name;
+      $('txEditBannerDate').textContent = tx.date;
+      cancelBtn.style.display = 'inline-block';
+      saveBtn.textContent = 'Simpan pembayaran';
+    } else {
+      banner.style.display = 'none';
+      cancelBtn.style.display = 'none';
+      saveBtn.textContent = 'Simpan transaksi';
+    }
+  }
+
+  function loadSaleForPayment(saleId){
+    const tx = state.month.sales.find(s=>s.id===saleId);
+    if (!tx){ alert('Transaksi tidak ditemukan.'); return; }
+    editingSaleId = saleId;
+
+    $('txName').value = tx.name;
+    document.querySelectorAll('#qtyGrid .qty-input').forEach(inp=>{
+      const item = tx.items.find(i=>i.productId===inp.dataset.prod);
+      inp.value = item ? item.qty : '';
+    });
+    $('txNote').value = tx.note || '';
+    $('txPaid').value = tx.paid || '';
+
+    updateTxCalc();
+    updateOldDebtHint();
+    setEditModeUI(true, tx);
+
+    const formCard = $('txName').closest('.card');
+    if (formCard) formCard.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  $('btnCancelEditTx').addEventListener('click', resetTxForm);
+
+  $('btnSaveTx').addEventListener('click', async ()=>{
+    const date = $('txDate').value || todayStr();
+    const name = $('txName').value.trim();
+    if (!name){ alert('Isi nama pelanggan dulu.'); return; }
+    const items = currentTxItems();
+    if (!items.length){ alert('Isi jumlah minimal satu produk.'); return; }
+    const raw = items.reduce((s,i)=>s+i.qty*i.price,0);
+    const rounded = roundTotal(raw);
+    const paid = Number($('txPaid').value)||0;
+    const paidWasEntered = $('txPaid').value !== '';
+    const note = $('txNote').value.trim();
+
+    // Uang transaksi dipakai untuk tagihan transaksi ini terlebih dahulu.
+    // Jadi bayar pas tidak pernah menggabungkan atau mengurangi hutang lama.
+    const hutangBaru = Math.max(rounded - paid, 0);
+    const kelebihan = Math.max(paid - rounded, 0);
+
+    if (editingSaleId){
+      const idx = state.month.sales.findIndex(s=>s.id===editingSaleId);
+      if (idx === -1){
+        alert('Transaksi yang sedang dibuka sudah tidak ada.');
+        resetTxForm(); renderAll(); return;
+      }
+      const saleId = editingSaleId;
+      const isPaidClicked = state.month.sales[idx].isPaidBtnClicked || false;
+      
+      const diff = rounded - paid; 
+      
+      state.month.sales[idx] = { ...state.month.sales[idx], date, name, items, rawTotal: raw, roundedTotal: rounded, paid, note, debtChange: diff, isPaidBtnClicked: isPaidClicked };
+      await saveMonth();
+
+      // Riwayat hutang bersifat mandiri: jangan menghapusnya saat transaksi diedit.
+      if (diff > 0){
+        state.customerLedger.push({ id: uid(), date, name, amount: diff, type: 'tambah', note: 'Kekurangan bayar transaksi' + (note?(' — '+note):''), sourceSaleId: saleId });
+      } else if (diff < 0) {
+        state.customerLedger.push({ id: uid(), date, name, amount: -diff, type: 'bayar', note: 'Kelebihan bayar transaksi' + (note?(' — '+note):''), sourceSaleId: saleId });
+      }
+      await saveKey(KEYS.customerLedger, state.customerLedger);
+    } else {
+      const saleId = uid();
+      state.month.sales.push({ id: saleId, date, name, items, rawTotal: raw, roundedTotal: rounded, paid, note, debtChange: hutangBaru - (kelebihan>0?kelebihan:0), isPaidBtnClicked: paidWasEntered });
+      await saveMonth();
+
+      if (hutangBaru > 0){
+        state.customerLedger.push({ id: uid(), date, name, amount: hutangBaru, type: 'tambah', note: 'Hutang transaksi' + (note?(' — '+note):''), sourceSaleId: saleId });
+        await saveKey(KEYS.customerLedger, state.customerLedger);
+      } else if (kelebihan > 0) {
+        state.customerLedger.push({ id: uid(), date, name, amount: kelebihan, type: 'bayar', note: 'Deposit/Kelebihan' + (note?(' — '+note):''), sourceSaleId: saleId });
+        await saveKey(KEYS.customerLedger, state.customerLedger);
+      }
+    }
+
+    resetTxForm();
+    renderAll();
+  });
+
+  // SIMPAN PENGELUARAN LACI
+  $('btnSaveExp').addEventListener('click', async ()=>{
+    const date = $('expDate').value || todayStr();
+    const amount = Number($('expAmount').value) || 0;
+    const note = $('expNote').value.trim();
+    if (amount <= 0) { alert('Isi jumlah uang yang diambil.'); return; }
+    state.month.expenses.push({ id: uid(), date, amount, note });
+    await saveMonth();
+    $('expAmount').value = ''; $('expNote').value = '';
+    renderExpTable(); renderRecap(); renderRecapBulan();
+  });
+
+  function renderTxTable(){
+    const date = $('txDate').value || todayStr();
+    const tbody = $('txTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    const dayTx = state.month.sales.filter(s=>s.date===date);
+    $('txEmpty').style.display = dayTx.length ? 'none' : 'block';
+    dayTx.forEach(tx=>{
+      const detail = tx.items.map(i=>`${escapeHtml(i.name)} ${i.qty}kg`).join(', ');
+      const totalKgTx = tx.items.reduce((s,i)=>s+i.qty,0);
+      let statusBadge;
+      const diff = tx.debtChange !== undefined ? tx.debtChange : (tx.roundedTotal - tx.paid);
+
+      if (diff > 0) statusBadge = `<span class="badge debt">+Hutang ${rupiah(diff)}</span>`;
+      else if (diff < 0) statusBadge = `<span class="badge paid">-Hutang ${rupiah(-diff)}</span>`;
+      else statusBadge = `<span class="badge zero">Lunas</span>`;
+
+      // Logika Warna Tombol Bayar
+      const btnPayStyle = tx.isPaidBtnClicked
+        ? 'background: #E5E7EB; color: #6B7280; border: none;' 
+        : 'background: var(--paid); color: #FFF; border: none; font-weight: bold;';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(tx.name)}</td><td><span style="font-size:12px;">${detail}</span></td>
+        <td class="num">${totalKgTx} kg</td>
+        <td class="num">${rupiah(tx.roundedTotal)}</td><td class="num">${rupiah(tx.paid)}</td>
+        <td>${statusBadge}</td>
+        <td class="row-actions">
+          <button class="ghost" style="${btnPayStyle}" data-pay="${tx.id}">Bayar</button>
+          <button class="ghost" data-riwayat="${escapeHtml(tx.name)}">Riwayat Hutang</button>
+          <button class="ghost danger" data-deltx="${tx.id}">Hapus</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('[data-riwayat]').forEach(b=>b.addEventListener('click', ()=>{
+      const name = b.dataset.riwayat;
+      document.querySelectorAll('#pos-root .tab-btn').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('#pos-root .tab-panel').forEach(x=>x.classList.remove('active'));
+      const hasilBtn = document.querySelector('#pos-root .tab-btn[data-tab="hasil"]');
+      hasilBtn.classList.add('active');
+      $('tab-hasil').classList.add('active');
+      showHpDetail(name);
+    }));
+
+    tbody.querySelectorAll('[data-pay]').forEach(b=>b.addEventListener('click', async ()=>{
+      const id = b.dataset.pay;
+      const tx = state.month.sales.find(s=>s.id === id);
+      if (tx && !tx.isPaidBtnClicked) {
+        tx.isPaidBtnClicked = true;
+        await saveMonth();
+        b.style.background = '#E5E7EB';
+        b.style.color = '#6B7280';
+      }
+      loadSaleForPayment(id);
+    }));
+
+    tbody.querySelectorAll('[data-deltx]').forEach(b=>b.addEventListener('click', async ()=>{
+      const id = b.dataset.deltx;
+      if (!confirm('Hapus transaksi ini? Riwayat hutang pelanggan tidak akan dihapus.')) return;
+      state.month.sales = state.month.sales.filter(s=>s.id!==id);
+      await saveMonth();
+      if (editingSaleId === id) resetTxForm();
+      renderAll();
+    }));
+  }
+
+  function renderExpTable(){
+    const date = $('expDate').value || todayStr();
+    const tbody = $('expTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    if(!state.month.expenses) state.month.expenses = [];
+    const dayExp = state.month.expenses.filter(e=>e.date===date);
+    $('expEmpty').style.display = dayExp.length ? 'none' : 'block';
+    dayExp.forEach(e=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(e.note)}</td>
+        <td class="num">${rupiah(e.amount)}</td>
+        <td class="row-actions" style="justify-content:flex-end;"><button class="ghost danger" data-delexp="${e.id}">Hapus</button></td>`;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('[data-delexp]').forEach(b=>b.addEventListener('click', async ()=>{
+      state.month.expenses = state.month.expenses.filter(e=>e.id!==b.dataset.delexp);
+      await saveMonth();
+      renderExpTable(); renderRecap(); renderRecapBulan();
+    }));
+  }
+
+  function renderRecap(){
+    const date = $('txDate').value || todayStr();
+    const dayTx = state.month.sales.filter(s=>s.date===date);
+    const dayExp = (state.month.expenses || []).filter(e=>e.date===date);
+    const perProduct = {};
+    let totalKg = 0, totalDibayar = 0, totalPengeluaran = 0;
+    
+    dayTx.forEach(tx=>{
+      totalDibayar += tx.paid;
+      tx.items.forEach(i=>{
+        perProduct[i.name] = (perProduct[i.name]||0) + i.qty;
+        totalKg += i.qty;
+      });
+    });
+    dayExp.forEach(e => { totalPengeluaran += e.amount; });
+
+    const tbody = $('recapProductTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    Object.entries(perProduct).forEach(([name,qty])=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(name)}</td><td class="num">${qty}</td>`;
+      tbody.appendChild(tr);
+    });
+    if (!Object.keys(perProduct).length) tbody.innerHTML = '<tr><td colspan="2" class="empty">Belum ada penjualan.</td></tr>';
+    
+    $('recapTotalKg').textContent = totalKg;
+    $('recapTotalDibayar').textContent = rupiah(totalDibayar);
+    $('recapTotalPengeluaran').textContent = '-' + rupiah(totalPengeluaran);
+    $('recapKasBersih').textContent = rupiah(totalDibayar - totalPengeluaran);
+  }
+
+  function renderRecapBulan(){
+    const perProduct = {};
+    let totalKg = 0, totalDibayar = 0, totalPengeluaran = 0;
+    state.month.sales.forEach(tx=>{
+      totalDibayar += tx.paid;
+      tx.items.forEach(i=>{
+        perProduct[i.name] = (perProduct[i.name]||0) + i.qty;
+        totalKg += i.qty;
+      });
+    });
+    (state.month.expenses || []).forEach(e => { totalPengeluaran += e.amount; });
+
+    const tbody = $('recapProductTableBulan').querySelector('tbody');
+    tbody.innerHTML = '';
+    Object.entries(perProduct).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([name,qty])=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(name)}</td><td class="num">${qty}</td>`;
+      tbody.appendChild(tr);
+    });
+    if (!Object.keys(perProduct).length) tbody.innerHTML = '<tr><td colspan="2" class="empty">Belum ada penjualan bulan ini.</td></tr>';
+    
+    $('recapBulanLabel').textContent = monthLabel(state.activeMonth);
+    $('recapBulanTotalKg').textContent = totalKg;
+    $('recapBulanTotalDibayar').textContent = rupiah(totalDibayar);
+    $('recapBulanTotalPengeluaran').textContent = '-' + rupiah(totalPengeluaran);
+    $('recapBulanKasBersih').textContent = rupiah(totalDibayar - totalPengeluaran);
+  }
+
+  $('txDate').addEventListener('change', async ()=>{
+    const d = $('txDate').value || todayStr();
+    $('expDate').value = d;
+    const m = d.slice(0,7);
+    if (m !== state.activeMonth){
+      await switchToMonth(m, { keepTxDate: true }); 
+    } else {
+      renderTxTable(); renderExpTable(); renderRecap();
+    }
+  });
+
+  $('expDate').addEventListener('change', async ()=>{
+    const d = $('expDate').value || todayStr();
+    $('txDate').value = d;
+    $('txDate').dispatchEvent(new Event('change'));
+  });
+
+  function refreshCustomerDatalist(){
+    const names = new Set();
+    state.customerLedger.forEach(l=>names.add(l.name));
+    state.month.sales.forEach(s=>names.add(s.name));
+    const dl = $('customerNames');
+    dl.innerHTML = '';
+    [...names].sort().forEach(n=>{
+      const opt = document.createElement('option');
+      opt.value = n;
+      dl.appendChild(opt);
+    });
+  }
+
+  // ---------- STOK: MINYAK ----------
+  function renderOil(){
+    const tbody = $('oilTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    let total = 0;
+    state.month.oilStock.forEach(o=>{
+      const sub = o.qty*o.price;
+      total += sub;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(o.date||'')}</td><td class="num">${o.qty}</td><td class="num">${rupiah(o.price)}</td><td class="num">${rupiah(sub)}</td><td><button class="ghost danger" data-del="${o.id}">Hapus</button></td>`;
+      tbody.appendChild(tr);
+    });
+    $('oilTotal').textContent = rupiah(total);
+    tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+      state.month.oilStock = state.month.oilStock.filter(o=>o.id!==b.dataset.del);
+      await saveMonth(); renderOil(); renderRingkasanCard();
+    }));
+  }
+  $('btnAddOil').addEventListener('click', async ()=>{
+    const date = $('oilDate').value || todayStr();
+    const qty = Number($('oilQty').value)||0;
+    const price = Number($('oilPrice').value)||0;
+    if (!qty){ alert('Isi jumlah dulu.'); return; }
+    state.month.oilStock.push({ id: uid(), date, qty, price });
+    await saveMonth();
+    $('oilQty').value=''; $('oilPrice').value='';
+    renderOil(); renderRingkasanCard();
+  });
+
+  // ---------- STOK: MANAJEMEN BARANG (per pemegang) ----------
+  function sackTotal(batch){ return (batch.sacks||[]).reduce((s,k)=>s+k,0); }
+  function stockMgmtItemQty(item){ return (item.batches||[]).reduce((s,b)=>s+sackTotal(b),0); }
+  function stockMgmtItemValue(item){ return (item.batches||[]).reduce((s,b)=>s + sackTotal(b) * (b.price!=null ? b.price : (item.price||0)), 0); }
+
+  function renderStockMgmt(){
+    const tbody = $('stockMgmtTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    $('stockMgmtEmpty').style.display = state.month.stockMgmt.length ? 'none' : 'block';
+    let total = 0;
+    state.month.stockMgmt.forEach(o=>{
+      const qty = stockMgmtItemQty(o);
+      const value = stockMgmtItemValue(o);
+      total += value;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(o.date||'')}</td><td>${escapeHtml(o.name)}</td><td class="num">${qty} kg</td><td class="num">${rupiah(o.price)}</td><td class="num">${rupiah(value)}</td>
+        <td class="row-actions"><button class="ghost" data-detail="${o.id}">Detail karung</button><button class="ghost danger" data-del="${o.id}">Hapus</button></td>`;
+      tbody.appendChild(tr);
+    });
+    $('stockMgmtTotal').textContent = rupiah(total);
+    tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+      state.month.stockMgmt = state.month.stockMgmt.filter(o=>o.id!==b.dataset.del);
+      await saveMonth(); renderStockMgmt(); renderRingkasanCard();
+      if ($('stockMgmtDetailCard').dataset.itemId === b.dataset.del) $('stockMgmtDetailCard').style.display = 'none';
+    }));
+    tbody.querySelectorAll('[data-detail]').forEach(b=>b.addEventListener('click', ()=>showStockMgmtDetail(b.dataset.detail)));
+    
+    if ($('stockMgmtDetailCard').style.display !== 'none' && $('stockMgmtDetailCard').dataset.itemId){
+      const stillExists = state.month.stockMgmt.find(o=>o.id===$('stockMgmtDetailCard').dataset.itemId);
+      if (stillExists) showStockMgmtDetail(stillExists.id); else $('stockMgmtDetailCard').style.display='none';
+    }
+
+    const dl = $('stockHolderNames'); dl.innerHTML = '';
+    state.month.stockMgmt.map(o=>o.name).sort((a,b)=>a.localeCompare(b)).forEach(n=>{
+      const opt = document.createElement('option'); opt.value = n; dl.appendChild(opt);
+    });
+  }
+
+  function showStockMgmtDetail(itemId){
+    const item = state.month.stockMgmt.find(o=>o.id===itemId);
+    if (!item) return;
+    const card = $('stockMgmtDetailCard');
+    card.style.display = 'block'; card.dataset.itemId = itemId;
+    $('stockMgmtDetailTitle').textContent = 'Detail karung — ' + item.name;
+    const tbody = $('stockMgmtDetailTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    const batches = item.batches || [];
+    batches.forEach(b=>{
+      const bq = sackTotal(b);
+      const price = b.price!=null ? b.price : (item.price||0);
+      const sub = bq * price;
+      const sacksText = (b.sacks||[]).map(k=>k+'kg').join(', ');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(b.date||'')}</td><td>${escapeHtml(sacksText)}</td><td class="num">${bq} kg</td><td class="num">${rupiah(price)}</td><td class="num">${rupiah(sub)}</td><td><button class="ghost danger" data-delbatch="${b.id}">Hapus</button></td>`;
+      tbody.appendChild(tr);
+    });
+    if (!batches.length) tbody.innerHTML = '<tr><td colspan="6" class="empty">Belum ada detail karung.</td></tr>';
+    tbody.querySelectorAll('[data-delbatch]').forEach(btn=>btn.addEventListener('click', async ()=>{
+      item.batches = (item.batches||[]).filter(b=>b.id!==btn.dataset.delbatch);
+      if (!item.batches.length){
+        state.month.stockMgmt = state.month.stockMgmt.filter(o=>o.id!==item.id);
+        card.style.display = 'none';
+      }
+      await saveMonth(); renderStockMgmt(); renderRingkasanCard();
+    }));
+    card.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  $('btnCloseStockMgmtDetail').addEventListener('click', ()=>{ $('stockMgmtDetailCard').style.display='none'; });
+
+  function updateSackTotal(){
+    let total = 0; document.querySelectorAll('#stockMgmtSackList .sack-qty-input').forEach(inp=>total += Number(inp.value)||0);
+    $('stockMgmtSackTotal').textContent = total + ' kg';
+  }
+  function addSackRow(){
+    const wrap = $('stockMgmtSackList'); const row = document.createElement('div'); row.className = 'sack-row';
+    row.innerHTML = `<input type="number" min="0" step="0.5" class="sack-qty-input" placeholder="kg karung"><button type="button" class="ghost danger sack-remove-btn">Hapus</button>`;
+    wrap.appendChild(row);
+    row.querySelector('.sack-qty-input').addEventListener('input', updateSackTotal);
+    row.querySelector('.sack-remove-btn').addEventListener('click', ()=>{
+      row.remove(); if (!wrap.querySelector('.sack-qty-input')) addSackRow(); updateSackTotal();
+    });
+  }
+  function resetSackRows(){ $('stockMgmtSackList').innerHTML = ''; addSackRow(); updateSackTotal(); }
+  $('btnAddSackRow').addEventListener('click', addSackRow);
+
+  $('btnAddStockMgmt').addEventListener('click', async ()=>{
+    const date = $('stockMgmtDate').value || todayStr();
+    const name = $('stockMgmtName').value.trim();
+    const price = Number($('stockMgmtPrice').value)||0;
+    const sackQtys = Array.from(document.querySelectorAll('#stockMgmtSackList .sack-qty-input')).map(inp=>Number(inp.value)||0).filter(q=>q>0);
+    const qty = sackQtys.reduce((s,q)=>s+q,0);
+    if (!name){ alert('Isi nama dulu.'); return; }
+    if (!qty){ alert('Isi kg minimal satu karung.'); return; }
+    const batch = { id: uid(), date, price, sacks: sackQtys };
+    const existing = state.month.stockMgmt.find(o=>o.name.trim().toLowerCase()===name.toLowerCase());
+    if (existing){
+      existing.batches = existing.batches || []; existing.batches.push(batch);
+      existing.price = price || existing.price; existing.date = date; 
+    } else {
+      state.month.stockMgmt.push({ id: uid(), name, date, price, batches: [batch] });
+    }
+    await saveMonth(); $('stockMgmtName').value=''; $('stockMgmtPrice').value='';
+    resetSackRows(); renderStockMgmt(); renderRingkasanCard();
+  });
+
+  // ---------- STOK: SISA BARANG ----------
+  function renderRemainProductOptions(){
+    const sel = $('remainProduct'); sel.innerHTML = '';
+    state.products.forEach(p=>{
+      const opt = document.createElement('option'); opt.value = p.id; opt.textContent = p.name; opt.dataset.price = p.price||0; sel.appendChild(opt);
+    });
+    sel.onchange = ()=>{
+      const opt = sel.options[sel.selectedIndex]; if (opt) $('remainPrice').value = opt.dataset.price || 0;
+    };
+    if (sel.options.length) sel.onchange();
+  }
+  function renderRemain(){
+    const tbody = $('remainTable').querySelector('tbody'); tbody.innerHTML = ''; let total = 0;
+    state.month.stockRemaining.forEach(o=>{
+      const sub = o.qty*o.price; total += sub; const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(o.date||'')}</td><td>${escapeHtml(o.name)}</td><td class="num">${o.qty}</td><td class="num">${rupiah(o.price)}</td><td class="num">${rupiah(sub)}</td><td><button class="ghost danger" data-del="${o.id}">Hapus</button></td>`;
+      tbody.appendChild(tr);
+    });
+    $('remainTotal').textContent = rupiah(total);
+    tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+      state.month.stockRemaining = state.month.stockRemaining.filter(o=>o.id!==b.dataset.del);
+      await saveMonth(); renderRemain(); renderRingkasanCard();
+    }));
+  }
+  $('btnAddRemain').addEventListener('click', async ()=>{
+    const date = $('remainDate').value || todayStr();
+    const sel = $('remainProduct'); const opt = sel.options[sel.selectedIndex];
+    if (!opt){ alert('Tambahkan produk dulu di Master Produk.'); return; }
+    const qty = Number($('remainQty').value)||0; const price = Number($('remainPrice').value)||0;
+    if (!qty){ alert('Isi jumlah dulu.'); return; }
+    state.month.stockRemaining.push({ id: uid(), date, name: opt.textContent, qty, price });
+    await saveMonth(); $('remainQty').value=''; renderRemain(); renderRingkasanCard();
+  });
+
+  function renderStokAll(){ renderOil(); renderStockMgmt(); renderRemainProductOptions(); renderRemain(); }
+
+  // ---------- LOGIKA LIFO REKAP HUTANG ----------
+  function processCustomerDebts(name) {
+    // Urutan sumber data dipertahankan untuk entri pada tanggal yang sama.
+    const entries = state.customerLedger.filter(l => l.name === name).map((l, index)=>({l,index}))
+      .sort((a,b) => a.l.date.localeCompare(b.l.date) || a.index-b.index).map(x=>x.l);
+    let debts = [];
+    let deposit = 0;
+
+    entries.forEach(l => {
+      if (l.type === 'tambah') {
+        debts.push({ id: l.id, amount: l.amount, remaining: l.amount, date: l.date });
+      } else {
+        let payment = l.amount;
+        // LIFO: pembayaran hanya memotong hutang yang sudah ada, dari yang terbaru.
+        for (let i = debts.length - 1; i >= 0 && payment > 0; i--) {
+          const cut = Math.min(payment, debts[i].remaining);
+          debts[i].remaining -= cut;
+          payment -= cut;
+        }
+        if (payment > 0) deposit += payment;
+      }
+    });
+
+    const activeDebts = debts.filter(d => d.remaining > 0);
+    const totalSisa = activeDebts.reduce((sum, d) => sum + d.remaining, 0);
+    return { activeDebts, totalSisa, deposit };
+  }
+
+  function renderHutangPelanggan(){
+    const allNames = [...new Set(state.customerLedger.map(l => l.name))].sort();
+    const processed = {};
+    allNames.forEach(name => {
+      processed[name] = processCustomerDebts(name);
+    });
+    // Hanya tampilkan pelanggan yang benar-benar masih punya hutang (bukan lunas/deposit)
+    const names = allNames.filter(name => processed[name].totalSisa > 0);
+    let maxCols = 1;
+    let grandTotal = 0;
+
+    names.forEach(name => {
+      const p = processed[name];
+      if (p.activeDebts.length > maxCols) maxCols = p.activeDebts.length;
+    });
+
+    const thead = $('hpSummaryTable').querySelector('thead');
+    const tbody = $('hpSummaryTable').querySelector('tbody');
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+
+    $('hpEmpty').style.display = names.length ? 'none' : 'block';
+
+    if (names.length) {
+      let trHead = document.createElement('tr');
+      let thName = document.createElement('th'); thName.textContent = 'Nama'; trHead.appendChild(thName);
+      for(let i=0; i<maxCols; i++) {
+        let th = document.createElement('th'); th.className='num mat-col'; th.textContent = 'Hutang '+(i+1); trHead.appendChild(th);
+      }
+      let thAddCol = document.createElement('th'); trHead.appendChild(thAddCol);
+      let thTotal = document.createElement('th'); thTotal.className='num'; thTotal.textContent = 'Total Hutang'; trHead.appendChild(thTotal);
+      let thAct = document.createElement('th'); trHead.appendChild(thAct);
+      thead.appendChild(trHead);
+
+      names.forEach(name => {
+        const p = processed[name];
+        if (p.totalSisa > 0) grandTotal += p.totalSisa;
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `<td><strong>${escapeHtml(name)}</strong></td>`;
+
+        for(let i=0; i<maxCols; i++) {
+          if (p.activeDebts[i]) {
+            const d = p.activeDebts[i];
+            tr.innerHTML += `<td class="num mat-col editable-cell-debt" data-debtid="${d.id}" data-editname="${escapeHtml(name)}" data-current="${d.remaining}" data-original="${d.amount}" title="Klik untuk edit">${rupiah(d.remaining)}<br><span style="font-size:10px;color:var(--ink-soft);">${d.date}</span></td>`;
+          } else {
+            tr.innerHTML += `<td class="mat-col empty-cell"></td>`;
+          }
+        }
+
+        tr.innerHTML += `<td style="text-align:center;"><button class="ghost" style="padding:6px 10px;" data-addcol="${escapeHtml(name)}" title="Tambah hutang baru untuk ${escapeHtml(name)}">+</button></td>`;
+
+        const totalHtml = `<span class="badge debt editable-debt" data-editname="${escapeHtml(name)}" data-current="${p.totalSisa}" style="cursor:pointer;" title="Klik untuk edit manual">${rupiah(p.totalSisa)}</span>`;
+
+        tr.innerHTML += `<td class="num">${totalHtml}</td><td style="text-align:right;"><div class="row-actions" style="justify-content:flex-end;"><button class="ghost" data-detail="${escapeHtml(name)}">Riwayat</button><button class="ghost danger" data-delrow="${escapeHtml(name)}">Hapus</button></div></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    $('hpGrandTotal').textContent = rupiah(grandTotal);
+    tbody.querySelectorAll('[data-detail]').forEach(b=>b.addEventListener('click', ()=>showHpDetail(b.dataset.detail)));
+
+    // Hapus 1 baris (semua riwayat hutang pelanggan ini) langsung
+    tbody.querySelectorAll('[data-delrow]').forEach(b=>b.addEventListener('click', async ()=>{
+      const name = b.dataset.delrow;
+      if (!confirm('Hapus semua riwayat hutang milik "'+name+'"? Tindakan ini tidak bisa dibatalkan.')) return;
+      state.customerLedger = state.customerLedger.filter(l=>l.name!==name);
+      await saveKey(KEYS.customerLedger, state.customerLedger);
+      if ($('hpDetailCard').dataset.name === name) $('hpDetailCard').style.display = 'none';
+      renderHutangPelanggan(); refreshCustomerDatalist();
+    }));
+
+    // Tambah kolom hutang baru untuk pelanggan tertentu
+    tbody.querySelectorAll('[data-addcol]').forEach(b=>b.addEventListener('click', async ()=>{
+      const name = b.dataset.addcol;
+      const amountStr = prompt('Jumlah hutang baru untuk "'+name+'" (Rp):', '0');
+      if (amountStr === null) return;
+      const amount = Math.max(Number(amountStr)||0, 0);
+      if (!amount) return;
+      const dateStr = prompt('Tanggal (YYYY-MM-DD):', todayStr());
+      if (dateStr === null) return;
+      state.customerLedger.push({ id: uid(), date: dateStr || todayStr(), name, amount, type: 'tambah', note: 'Tambah hutang manual' });
+      await saveKey(KEYS.customerLedger, state.customerLedger);
+      renderHutangPelanggan(); refreshCustomerDatalist();
+    }));
+
+    // Edit sel hutang individual (per kolom)
+    tbody.querySelectorAll('.editable-cell-debt').forEach(cell=>{
+      cell.addEventListener('click', ()=>{
+        const debtId = cell.dataset.debtid;
+        const name = cell.dataset.editname;
+        const current = Number(cell.dataset.current)||0;
+        const original = Number(cell.dataset.original)||0;
+        const dateText = cell.querySelector('span') ? cell.querySelector('span').textContent : '';
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.step = '500';
+        input.value = current;
+        input.style.width = '110px';
+        input.style.textAlign = 'right';
+        input.style.fontFamily = 'var(--mono)';
+        input.style.padding = '6px 8px';
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        input.focus();
+        input.select();
+
+        let done = false;
+        const commit = async ()=>{
+          if (done) return;
+          done = true;
+          const newVal = Math.max(Number(input.value)||0, 0);
+          if (newVal !== current){
+            const entry = state.customerLedger.find(l=>l.id===debtId);
+            if (entry){
+              const paidPortion = original - current; // bagian yang sudah terpotong pembayaran (LIFO)
+              entry.amount = Math.max(newVal + paidPortion, 0);
+              await saveKey(KEYS.customerLedger, state.customerLedger);
+            }
+          }
+          renderHutangPelanggan();
+        };
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', (e)=>{
+          if (e.key === 'Enter'){ input.blur(); }
+          else if (e.key === 'Escape'){ done = true; renderHutangPelanggan(); }
+        });
+      });
+    });
+
+    tbody.querySelectorAll('.editable-debt').forEach(span=>{
+      span.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const name = span.dataset.editname;
+        const current = Number(span.dataset.current)||0;
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.step = '500';
+        input.value = current;
+        input.style.width = '120px';
+        input.style.textAlign = 'right';
+        input.style.fontFamily = 'var(--mono)';
+        input.style.padding = '6px 8px';
+        span.replaceWith(input);
+        input.focus();
+        input.select();
+
+        let done = false;
+        const commit = async ()=>{
+          if (done) return;
+          done = true;
+          const newVal = Math.max(Number(input.value)||0, 0);
+          const diff = newVal - current;
+          if (diff !== 0){
+            state.customerLedger.push({ id: uid(), date: todayStr(), name, amount: Math.abs(diff), type: diff>0?'tambah':'bayar', note: 'Penyesuaian manual saldo hutang' });
+            await saveKey(KEYS.customerLedger, state.customerLedger);
+          }
+          renderHutangPelanggan();
+        };
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', (e)=>{
+          if (e.key === 'Enter'){ input.blur(); }
+          else if (e.key === 'Escape'){ done = true; renderHutangPelanggan(); }
+        });
+      });
+    });
+  }
+
+  function openDebtModal(name=''){
+    $('debtModalTitle').textContent = name ? 'Tambah hutang — ' + name : 'Tambah hutang pelanggan';
+    $('debtModalName').value = name;
+    $('debtModalAmount').value = '';
+    $('debtModalDate').value = todayStr();
+    $('debtModalNote').value = '';
+    $('debtModal').classList.add('open');
+    $('debtModal').setAttribute('aria-hidden', 'false');
+    setTimeout(()=>$('debtModalName').focus(), 0);
+  }
+  function closeDebtModal(){ $('debtModal').classList.remove('open'); $('debtModal').setAttribute('aria-hidden', 'true'); }
+  $('btnAddHpRow').addEventListener('click', ()=>openDebtModal());
+  $('btnCloseDebtModal').addEventListener('click', closeDebtModal);
+  $('debtModal').addEventListener('click', e=>{ if(e.target === $('debtModal')) closeDebtModal(); });
+  $('debtForm').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const name = $('debtModalName').value.trim();
+    const amount = Math.max(Number($('debtModalAmount').value)||0, 0);
+    if (!name || !amount) { alert('Isi nama pelanggan dan jumlah hutang.'); return; }
+    state.customerLedger.push({ id: uid(), date: $('debtModalDate').value || todayStr(), name, amount, type:'tambah', note: $('debtModalNote').value.trim() || 'Tambah hutang manual' });
+    await saveKey(KEYS.customerLedger, state.customerLedger);
+    closeDebtModal(); renderHutangPelanggan(); refreshCustomerDatalist();
+  });
+
+  function showHpDetail(name){
+    $('hpDetailCard').style.display = 'block'; $('hpDetailCard').dataset.name = name;
+    $('hpDetailTitle').textContent = 'Riwayat hutang — ' + name;
+    const tbody = $('hpDetailTable').querySelector('tbody'); tbody.innerHTML = '';
+    const entries = state.customerLedger.filter(l=>l.name===name).sort((a,b)=> a.date<b.date?-1 : (a.date>b.date?1:0));
+    let running = 0;
+    entries.forEach(l=>{
+      running += (l.type==='tambah' ? l.amount : -l.amount);
+      const saldoText = running > 0 ? rupiah(running) : (running < 0 ? '&minus;' + rupiah(-running) + ' (deposit)' : 'Lunas (Rp0)');
+      const gotoBtn = l.sourceSaleId ? `<button class="ghost" data-gototx="${l.sourceSaleId}" data-gotodate="${l.date}">Lihat Transaksi</button> ` : '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${l.date}</td><td>${l.type==='tambah'?'<span style="color:var(--debt);">+ Tambah hutang</span>':'<span style="color:var(--paid);">&minus; Bayar hutang</span>'}</td><td class="num">${l.type==='tambah'?'+':'-'}${rupiah(l.amount)}</td><td class="num">${saldoText}</td><td>${escapeHtml(l.note||'')}</td><td class="row-actions">${gotoBtn}<button class="ghost danger" data-delledger="${l.id}">Hapus</button></td>`;
+      tbody.appendChild(tr);
+    });
+    if (!entries.length) tbody.innerHTML = '<tr><td colspan="6" class="empty">Belum ada riwayat.</td></tr>';
+    tbody.querySelectorAll('[data-delledger]').forEach(b=>b.addEventListener('click', async ()=>{
+      state.customerLedger = state.customerLedger.filter(l=>l.id!==b.dataset.delledger);
+      await saveKey(KEYS.customerLedger, state.customerLedger); renderHutangPelanggan(); showHpDetail(name);
+    }));
+    tbody.querySelectorAll('[data-gototx]').forEach(b=>b.addEventListener('click', async ()=>{
+      const saleId = b.dataset.gototx;
+      const date = b.dataset.gotodate;
+      document.querySelectorAll('#pos-root .tab-btn').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('#pos-root .tab-panel').forEach(x=>x.classList.remove('active'));
+      const txBtn = document.querySelector('#pos-root .tab-btn[data-tab="transaksi"]');
+      txBtn.classList.add('active');
+      $('tab-transaksi').classList.add('active');
+      const m = date.slice(0,7);
+      if (m !== state.activeMonth){
+        await switchToMonth(m, { keepTxDate: true });
+      }
+      $('txDate').value = date;
+      $('expDate').value = date;
+      renderTxTable(); renderExpTable(); renderRecap();
+      setTimeout(()=>{
+        const targetBtn = document.querySelector(`#txTable [data-deltx="${saleId}"]`);
+        if (targetBtn){
+          const row = targetBtn.closest('tr');
+          if (row){
+            row.scrollIntoView({behavior:'smooth', block:'center'});
+            const orig = row.style.background;
+            row.style.background = '#FFF3D6';
+            setTimeout(()=>{ row.style.background = orig; }, 2000);
+          }
+        }
+      }, 250);
+    }));
+    $('hpDetailCard').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  $('btnCloseHpDetail').addEventListener('click', ()=>{ $('hpDetailCard').style.display='none'; });
+
+  // ---------- HUTANG PRIBADI (per bulan) ----------
+  function renderHutangPribadi(){
+    const tbody = $('hprTable').querySelector('tbody'); tbody.innerHTML = '';
+    $('hprEmpty').style.display = state.month.personalLedger.length ? 'none' : 'block';
+    let total = 0;
+    state.month.personalLedger.forEach(l=>{
+      total += l.amount; const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${l.date}</td><td>${escapeHtml(l.name)}</td><td class="num">${rupiah(l.amount)}</td><td>${escapeHtml(l.note||'')}</td><td><button class="ghost danger" data-del="${l.id}">Hapus</button></td>`;
+      tbody.appendChild(tr);
+    });
+    $('hprGrandTotal').textContent = rupiah(total);
+    tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+      state.month.personalLedger = state.month.personalLedger.filter(l=>l.id!==b.dataset.del);
+      await saveMonth(); renderHutangPribadi(); renderRingkasanCard();
+    }));
+  }
+  $('btnAddHutangPri').addEventListener('click', async ()=>{
+    const date = $('hprDate').value || todayStr(); const name = $('hprName').value.trim();
+    const amount = Number($('hprAmount').value)||0; const note = $('hprNote').value.trim();
+    if (!name || !amount){ alert('Isi nama dan jumlah dulu.'); return; }
+    state.month.personalLedger.push({ id: uid(), date, name, amount, note });
+    await saveMonth(); $('hprName').value=''; $('hprAmount').value=''; $('hprNote').value='';
+    renderHutangPribadi(); renderRingkasanCard();
+  });
+
+  // ---------- PENGURANGAN SALDO (per bulan) ----------
+  function renderSaldo(){
+    const tbody = $('saldoTable').querySelector('tbody'); tbody.innerHTML = '';
+    $('saldoEmpty').style.display = state.month.saldoLog.length ? 'none' : 'block';
+    let total = 0;
+    state.month.saldoLog.forEach(l=>{
+      const hasil = (l.a||0) - (l.b||0); total += hasil; const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${l.date}</td><td class="num">${(l.a||0).toLocaleString('id-ID')}</td><td class="num">${(l.b||0).toLocaleString('id-ID')}</td><td class="num">${hasil.toLocaleString('id-ID')}</td><td>${escapeHtml(l.note||'')}</td><td><button class="ghost danger" data-del="${l.id}">Hapus</button></td>`;
+      tbody.appendChild(tr);
+    });
+    $('saldoGrandTotal').textContent = total.toLocaleString('id-ID');
+    tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', async ()=>{
+      state.month.saldoLog = state.month.saldoLog.filter(l=>l.id!==b.dataset.del);
+      await saveMonth(); renderSaldo(); renderRingkasanCard();
+    }));
+  }
+  $('btnAddSaldo').addEventListener('click', async ()=>{
+    const date = $('saldoDate').value || todayStr(); const a = Number($('saldoA').value)||0;
+    const b = Number($('saldoB').value)||0; const note = $('saldoNote').value.trim();
+    state.month.saldoLog.push({ id: uid(), date, a, b, note });
+    await saveMonth(); $('saldoA').value=''; $('saldoB').value=''; $('saldoNote').value='';
+    renderSaldo(); renderRingkasanCard();
+  });
+
+  // ---------- RINGKASAN REFACTORED ----------
+  function renderRingkasanCard(){
+    const selectedDate = $('ringkasanDate').value || todayStr();
+    $('ringkasanHariIniTanggal').textContent = selectedDate;
+    $('ringkasanBulanLabel2').textContent = monthLabel(state.activeMonth);
+
+    const isSelectedMonth = selectedDate.slice(0,7) === state.activeMonth;
+    $('hiNote').textContent = 'Tanggal yang dipilih berada di luar bulan aktif. Pilih bulan yang sesuai di bagian atas.';
+    $('hiNote').style.display = isSelectedMonth ? 'none' : 'block';
+
+    // HARI INI
+    let hiOil=0, hiStockMgmt=0, hiRemain=0, hiHutangPel=0, hiHutangPri=0, hiSaldo=0;
+    if (isSelectedMonth) {
+      hiOil = state.month.oilStock.filter(o=>o.date===selectedDate).reduce((s,o)=>s+o.qty*o.price,0);
+      hiStockMgmt = state.month.stockMgmt.reduce((s,o)=>{
+        const bToday = (o.batches||[]).filter(b=>b.date===selectedDate);
+        return s + bToday.reduce((sum,b)=> sum + sackTotal(b)*(b.price!=null?b.price:(o.price||0)), 0);
+      },0);
+      hiRemain = state.month.stockRemaining.filter(o=>o.date===selectedDate).reduce((s,o)=>s+o.qty*o.price,0);
+      hiHutangPel = state.customerLedger.filter(l=>l.date===selectedDate).reduce((s,l)=> s + (l.type==='tambah'?l.amount:-l.amount), 0);
+      hiHutangPri = state.month.personalLedger.filter(l=>l.date===selectedDate).reduce((s,l)=>s+l.amount,0);
+      hiSaldo = state.month.saldoLog.filter(l=>l.date===selectedDate).reduce((s,l)=>s+((l.a||0)-(l.b||0)),0);
+    }
+    const hiGrand = hiOil + hiStockMgmt + (hiHutangPel > 0 ? hiHutangPel : 0) + hiRemain;
+
+    $('hiOil').textContent = rupiah(hiOil);
+    $('hiStockMgmt').textContent = rupiah(hiStockMgmt);
+    $('hiRemain').textContent = rupiah(hiRemain);
+    $('hiHutangPel').textContent = rupiah(hiHutangPel > 0 ? hiHutangPel : 0);
+    $('hiHutangPri').textContent = rupiah(hiHutangPri);
+    $('hiSaldo').textContent = hiSaldo.toLocaleString('id-ID');
+    $('hiGrand').textContent = rupiah(hiGrand);
+
+    // BULAN INI (SEMUA WAKTU)
+    const totalOil = state.month.oilStock.reduce((s,o)=>s+o.qty*o.price,0);
+    const totalStockMgmt = state.month.stockMgmt.reduce((s,o)=>s+stockMgmtItemValue(o),0);
+    const totalRemain = state.month.stockRemaining.reduce((s,o)=>s+o.qty*o.price,0);
+    const balances = customerBalances();
+    const totalHutangPel = Object.values(balances).reduce((s,b)=>s+(b>0?b:0),0);
+    const totalHutangPri = state.month.personalLedger.reduce((s,l)=>s+l.amount,0);
+    const totalSaldo = state.month.saldoLog.reduce((s,l)=>s+((l.a||0)-(l.b||0)),0);
+    const grand = totalOil + totalStockMgmt + totalHutangPel + totalRemain;
+
+    $('sumOil').textContent = rupiah(totalOil);
+    $('sumStockMgmt').textContent = rupiah(totalStockMgmt);
+    $('sumRemain').textContent = rupiah(totalRemain);
+    $('sumHutangPel').textContent = rupiah(totalHutangPel);
+    $('sumHutangPri').textContent = rupiah(totalHutangPri);
+    $('sumSaldo').textContent = totalSaldo.toLocaleString('id-ID');
+    $('sumGrand').textContent = rupiah(grand);
+  }
+
+  // ---------- RESET ----------
+  $('btnResetMonth').addEventListener('click', async ()=>{
+    if (!confirm('Hapus semua data bulan ' + monthLabel(state.activeMonth) + '? Tindakan ini tidak bisa dibatalkan.')) return;
+    state.month = emptyMonthData();
+    await saveMonth();
+    renderAll();
+  });
+
+  $('btnResetAll').addEventListener('click', async ()=>{
+    if (!confirm('Yakin hapus SEMUA data POS (semua bulan) di perangkat ini? Tindakan ini tidak bisa dibatalkan.')) return;
+    try {
+      const listed = await GAS_Storage.list('pos:');
+      const keys = listed ? listed.keys : [];
+      for (const k of keys){
+        try { await GAS_Storage.delete(k); } catch(e){}
+      }
+    } catch(e){ console.error(e); }
+    state = { products: [], customerLedger: [], monthsList: [], activeMonth: currentMonthStr(), month: emptyMonthData() };
+    Object.keys(monthsCache).forEach(k=>delete monthsCache[k]);
+    monthsCache[state.activeMonth] = state.month;
+    updateMonthUI();
+    renderAll();
+    alert('Seluruh data berhasil dihapus!');
+  });
+
+  function renderAll(){
+    renderProducts();
+    renderQtyGrid();
+    renderTxTable();
+    renderExpTable(); 
+    renderRecap();
+    renderRecapBulan();
+    renderStokAll();
+    renderHutangPelanggan();
+    renderHutangPribadi();
+    renderSaldo();
+    renderRingkasanCard();
+    refreshCustomerDatalist();
+    updateOldDebtHint();
+  }
+
+  $('ringkasanDate').addEventListener('change', renderRingkasanCard);
+
+  async function init(){
+    $('txDate').value = todayStr();
+    $('expDate').value = todayStr();
+    $('hprDate').value = todayStr();
+    $('oilDate').value = todayStr();
+    $('stockMgmtDate').value = todayStr();
+    $('remainDate').value = todayStr();
+    $('saldoDate').value = todayStr();
+    $('ringkasanDate').value = todayStr();
+    resetSackRows();
+    await loadGlobal();
+    await loadMonth(currentMonthStr());
+    updateMonthUI();
+    renderAll();
+  }
+
+  init();
+})();
+</script>
