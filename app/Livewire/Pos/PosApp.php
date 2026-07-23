@@ -333,7 +333,7 @@ class PosApp extends Component
 
         $rawTotal = (int) round(array_sum(array_map(fn ($i) => $i['qty'] * $i['product']->price, $items)));
         $roundedTotal = self::roundTotal($rawTotal);
-        $paid = (int) ($this->txPaid ?? $roundedTotal);
+        $paid = $this->txPaidTouched && ! is_null($this->txPaid) && $this->txPaid !== '' ? (int) str_replace(',', '.', str_replace('.', '', $this->txPaid)) : 0;
         $diff = $roundedTotal - $paid;
         $date = $this->txDate;
         $name = $this->txName;
@@ -350,7 +350,7 @@ class PosApp extends Component
                     'date' => $date, 'name' => $name, 'raw_total' => $rawTotal,
                     'rounded_total' => $roundedTotal, 'paid' => $paid, 'diff' => $diff,
                     'note' => $note ?: null,
-                    'is_paid_btn_clicked' => true,
+                    'is_paid_btn_clicked' => $paid > 0,
                 ]);
                 SaleItem::where('sale_id', $sale->id)->delete();
                 CustomerLedger::where('sale_id', $sale->id)->delete();
@@ -359,7 +359,7 @@ class PosApp extends Component
                     'date' => $date, 'name' => $name, 'raw_total' => $rawTotal,
                     'rounded_total' => $roundedTotal, 'paid' => $paid, 'diff' => $diff,
                     'note' => $note ?: null,
-                    'is_paid_btn_clicked' => true,
+                    'is_paid_btn_clicked' => $paid > 0,
                 ]);
             }
 

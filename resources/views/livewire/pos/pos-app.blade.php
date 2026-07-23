@@ -72,7 +72,7 @@
                                                                });
                                                            "
                                                            x-model="qty"
-                                                           x-on:input.debounce.400ms="$wire.set('txQty.' + pid, qty.replace(',', '.'))"
+                                                           x-on:change="$wire.set('txQty.' + pid, qty.replace(',', '.'))"
                                                            class="qty-input" placeholder="0">
                                                     <button type="button" class="qty-btn" wire:click="incrementQty({{ $product->id }})">+</button>
                                                 </div>
@@ -105,7 +105,7 @@
                                 <div class="tx-paid-group">
                                     <label for="txPaid">Dibayar (Rp)</label>
                                     <div class="input-group">
-                                        <input type="number" id="txPaid" min="0" step="500" wire:model.live.debounce.400ms="txPaid" placeholder="0">
+                                        <input type="text" id="txPaid" inputmode="numeric" wire:model.live.debounce.400ms="txPaid" placeholder="0">
                                         <button type="button" class="pas-btn" wire:click="fillLunas">Pas</button>
                                     </div>
                                 </div>
