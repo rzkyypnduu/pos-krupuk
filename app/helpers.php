@@ -20,6 +20,7 @@ if (! function_exists('fmtKg')) {
         if ($qty == (int) $qty) {
             return (string) (int) $qty;
         }
+
         return str_replace('.', ',', rtrim(sprintf('%.1f', $qty), '0'));
     }
 }

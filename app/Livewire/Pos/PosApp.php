@@ -169,7 +169,7 @@ class PosApp extends Component
 
     public function updatedTxQty($value, $key): void
     {
-        if (!is_null($value) && $value !== '') {
+        if (! is_null($value) && $value !== '') {
             $normalized = str_replace(',', '.', $value);
             $this->txQty[$key] = (float) $normalized;
         }
@@ -215,7 +215,22 @@ class PosApp extends Component
                 'is_paid_btn_clicked' => true,
             ]);
 
-            CustomerLedger::where('sale_id', $saleId)->delete();
+            $bayar = CustomerLedger::where('sale_id', $saleId)
+                ->where('type', 'bayar')
+                ->first();
+
+            if ($bayar) {
+                $bayar->update(['amount' => $sale->rounded_total]);
+            } else {
+                CustomerLedger::create([
+                    'date' => $sale->date->format('Y-m-d'),
+                    'name' => $sale->name,
+                    'amount' => $sale->rounded_total,
+                    'type' => 'bayar',
+                    'note' => 'Pembayaran lunas transaksi',
+                    'sale_id' => $saleId,
+                ]);
+            }
         });
 
         $this->pendingPaySaleId = null;
@@ -335,7 +350,7 @@ class PosApp extends Component
                     'date' => $date, 'name' => $name, 'raw_total' => $rawTotal,
                     'rounded_total' => $roundedTotal, 'paid' => $paid, 'diff' => $diff,
                     'note' => $note ?: null,
-                    'is_paid_btn_clicked' => $this->isPaymentFlow ? true : $sale->is_paid_btn_clicked,
+                    'is_paid_btn_clicked' => true,
                 ]);
                 SaleItem::where('sale_id', $sale->id)->delete();
                 CustomerLedger::where('sale_id', $sale->id)->delete();
@@ -344,6 +359,7 @@ class PosApp extends Component
                     'date' => $date, 'name' => $name, 'raw_total' => $rawTotal,
                     'rounded_total' => $roundedTotal, 'paid' => $paid, 'diff' => $diff,
                     'note' => $note ?: null,
+                    'is_paid_btn_clicked' => true,
                 ]);
             }
 
@@ -357,18 +373,18 @@ class PosApp extends Component
                 ]);
             }
 
-            if ($diff > 0) {
+            CustomerLedger::create([
+                'date' => $date, 'name' => $name, 'amount' => $roundedTotal,
+                'type' => 'tambah',
+                'note' => 'Transaksi'.($note ? ' — '.$note : ''),
+                'sale_id' => $sale->id,
+            ]);
+
+            if ($paid > 0) {
                 CustomerLedger::create([
-                    'date' => $date, 'name' => $name, 'amount' => $diff,
-                    'type' => 'tambah',
-                    'note' => 'Kekurangan bayar transaksi'.($note ? ' — '.$note : ''),
-                    'sale_id' => $sale->id,
-                ]);
-            } elseif ($diff < 0) {
-                CustomerLedger::create([
-                    'date' => $date, 'name' => $name, 'amount' => -$diff,
+                    'date' => $date, 'name' => $name, 'amount' => $paid,
                     'type' => 'bayar',
-                    'note' => 'Kelebihan bayar transaksi'.($note ? ' — '.$note : ''),
+                    'note' => 'Pembayaran transaksi'.($note ? ' — '.$note : ''),
                     'sale_id' => $sale->id,
                 ]);
             }
@@ -388,7 +404,7 @@ class PosApp extends Component
         $this->txDate = $sale->date->format('Y-m-d');
         $this->txName = $sale->name;
         $this->txNote = $sale->note ?? '';
-        $this->txPaid = $sale->paid;
+        $this->txPaid = 0;
         $this->txPaidTouched = true;
 
         foreach (array_keys($this->txQty) as $pid) {
@@ -722,7 +738,7 @@ class PosApp extends Component
                 $debts[] = ['id' => $l->id, 'amount' => $l->amount, 'remaining' => $l->amount, 'date' => $l->date->format('Y-m-d')];
             } else {
                 $payment = $l->amount;
-                for ($i = count($debts) - 1; $i >= 0 && $payment > 0; $i--) {
+                for ($i = 0; $i < count($debts) && $payment > 0; $i++) {
                     $cut = min($payment, $debts[$i]['remaining']);
                     $debts[$i]['remaining'] -= $cut;
                     $payment -= $cut;
@@ -754,8 +770,9 @@ class PosApp extends Component
     {
         $entries = CustomerLedger::where('name', $name)->orderBy('date')->orderBy('id')->get();
         $running = 0;
+        $sales = Sale::whereIn('id', $entries->pluck('sale_id')->filter()->unique())->get()->keyBy('id');
 
-        return $entries->map(function ($l) use (&$running) {
+        return $entries->map(function ($l) use (&$running, $sales) {
             $running += $l->type === 'tambah' ? $l->amount : -$l->amount;
 
             return (object) [
@@ -766,6 +783,7 @@ class PosApp extends Component
                 'running' => $running,
                 'note' => $l->note,
                 'sale_id' => $l->sale_id,
+                'paid' => $l->sale_id && isset($sales[$l->sale_id]) ? $sales[$l->sale_id]->paid : null,
             ];
         });
     }

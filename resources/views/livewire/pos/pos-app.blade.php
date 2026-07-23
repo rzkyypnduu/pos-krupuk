@@ -259,7 +259,7 @@
                         <h2 style="font-size:24px;">Transaksi Hari Ini</h2>
                         <div class="table-wrap">
                             <table class="tx-table" id="txTable">
-                                <thead><tr><th>Nama</th><th>Produk</th><th class="num">Kg</th><th class="num">Tagihan</th><th>Status</th><th></th></tr></thead>
+                                <thead><tr><th>Nama</th><th>Produk</th><th class="num">Kg</th><th class="num">Tagihan</th><th class="num">Dibayar</th><th>Status</th><th></th></tr></thead>
                                 <tbody>
                                     @forelse ($sales as $tx)
                                         <tr wire:key="sale-{{ $tx->id }}">
@@ -271,6 +271,7 @@
                                             </td>
                                             <td class="num">{{ fmtKg($tx->items->sum('qty')) }}</td>
                                             <td class="num">{{ rupiah($tx->rounded_total) }}</td>
+                                            <td class="num">{{ rupiah($tx->paid) }}</td>
                                             <td>
                                                 @if($tx->diff > 0) <span class="badge debt">Kurang {{ rupiah($tx->diff) }}</span>
                                                 @elseif($tx->diff < 0) <span class="badge paid">Lebih {{ rupiah(-$tx->diff) }}</span>
@@ -284,7 +285,7 @@
                                             </td>
                                         </tr>
                                     @empty
-                                        <tr><td colspan="6" class="empty" style="padding:18px;font-size:15px;">Belum ada transaksi hari ini.</td></tr>
+                                        <tr><td colspan="7" class="empty" style="padding:18px;font-size:15px;">Belum ada transaksi hari ini.</td></tr>
                                     @endforelse
                                 </tbody>
                             </table>
@@ -341,7 +342,7 @@
             {{-- 1. HUTANG PELANGGAN --}}
             <div class="section-header">
                 <h2>1. Rekap Hutang Pelanggan</h2>
-                <p>Rekap bersifat kumulatif (semua waktu). Pembayaran memotong hutang yang paling kanan (terbaru) terlebih dahulu (LIFO). Klik pada angka hutang untuk mengubahnya secara manual.</p>
+                <p>Rekap bersifat kumulatif (semua waktu). Setiap transaksi mencatat <strong>total tagihan</strong> sebagai hutang baru. Pembayaran memotong hutang yang paling kiri (terlama) terlebih dahulu (FIFO). Klik pada angka hutang untuk mengubahnya secara manual.</p>
             </div>
 
             <div class="card">
@@ -427,14 +428,15 @@
                     <h2 id="hpDetailTitle">Detail hutang &mdash; {{ $hpDetailName }}</h2>
                     @php $hpEntries = $this->hpDetailEntries($hpDetailName); @endphp
                     <div class="table-wrap">
-                        <table id="hpDetailTable">
-                            <thead><tr><th>Tanggal</th><th>Jenis</th><th class="num">Jumlah</th><th class="num">Saldo berjalan</th><th>Catatan</th><th></th></tr></thead>
+                            <table id="hpDetailTable">
+                                <thead><tr><th>Tanggal</th><th>Jenis</th><th class="num">Jumlah</th><th class="num">Dibayar</th><th class="num">Saldo berjalan</th><th>Catatan</th><th></th></tr></thead>
                             <tbody>
                                 @forelse ($hpEntries as $entry)
                                     <tr wire:key="hpd-{{ $entry->id }}">
                                         <td>{{ $entry->date }}</td>
                                         <td>{!! $entry->type === 'tambah' ? '<span style="color:var(--debt);">+ Tambah hutang</span>' : '<span style="color:var(--paid);">&minus; Bayar hutang</span>' !!}</td>
                                         <td class="num">{{ $entry->type === 'tambah' ? '+' : '-' }}{{ rupiah($entry->amount) }}</td>
+                                        <td class="num">{{ $entry->sale_id && $entry->paid !== null ? rupiah($entry->paid) : '-' }}</td>
                                         <td class="num">{!! $entry->running > 0 ? rupiah($entry->running) : ($entry->running < 0 ? '&minus;'.rupiah(-$entry->running).' (deposit)' : 'Lunas (Rp0)') !!}</td>
                                         <td>{{ $entry->note ?? '' }}</td>
                                         <td class="row-actions">
@@ -445,7 +447,7 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="6" class="empty">Belum ada riwayat.</td></tr>
+                                    <tr><td colspan="7" class="empty">Belum ada riwayat.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
