@@ -234,6 +234,8 @@ class PosApp extends Component
         });
 
         $this->pendingPaySaleId = null;
+        $this->resetTxForm();
+        $this->dispatch('scroll-to-form');
     }
 
     public function payWithForm(int $saleId): void
@@ -391,6 +393,7 @@ class PosApp extends Component
         });
 
         $this->resetTxForm();
+        $this->dispatch('scroll-to-form');
     }
 
     public function loadSaleForPayment(int $saleId): void
@@ -415,6 +418,8 @@ class PosApp extends Component
                 $this->txQty[$item->product_id] = (float) $item->qty;
             }
         }
+
+        $this->dispatch('scroll-to-form');
     }
 
     public function markPaidBtnClicked(int $saleId): void
