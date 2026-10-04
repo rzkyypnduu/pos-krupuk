@@ -127,7 +127,7 @@ Tab Hasil adalah **lembar harian** yang mengikuti tanggal aktif. Perilakunya:
   - **Saldo** = total aset − hutang pribadi
   - **Total** = total aset − pengurangan saldo − hutang pribadi
   (Ringkasan harian yang dulu ada di tab Ringkasan sudah pindah ke sini; tab Ringkasan
-  sekarang hanya neraca bulanan per tanggal aktif.)
+  sekarang berisi neraca bulanan + 3 widget analitik — lihat bagian Tab Ringkasan.)
 - **Salin-tempel otomatis sekali per tanggal.** Saat sebuah tanggal dibuka pertama kali
   dan masih **kosong**, seluruh isi tab Hasil disalin dari tanggal yang terakhir dilihat
   (atau tanggal terdekat yang punya data). Setelah itu kedua tanggal **independen** —
@@ -142,6 +142,32 @@ Tab Hasil adalah **lembar harian** yang mengikuti tanggal aktif. Perilakunya:
   dan tetap tampil di semua lembar).
 
 Fitur speech-to-text di tab Transaksi tidak berubah.
+
+## Tab Ringkasan - neraca + 3 widget analitik (periode bulan aktif)
+Tab Ringkasan mengikuti **bulan dari tanggal aktif** (sama seperti tab Hasil). Isinya
+urut dari atas ke bawah:
+
+1. **Ringkasan neraca & stok** — kartu lama: total stok minyak, manajemen stok,
+   sisa barang, hutang pelanggan, hutang pribadi, pengurangan saldo, lalu total
+   keseluruhan aset. Tetap dihitung per **tanggal aktif**.
+2. **Grafik penjualan harian** — grafik garis 2 seri per tanggal (1–31) bulan aktif:
+   - **Diterima** (oranye) = `SUM(paid) + SUM(paid_kemarin)` tiap hari
+   - **Kas bersih** (hijau) = Diterima − Pengeluaran (`expenses`)
+   Kedua garis memakai **area isian tipis**; sumbu vertikal dalam juta rupiah,
+   tooltip menampilkan rupiah persis + versi "jt". Chart.js **lokal**
+   (`public/js/chart.umd.min.js`, unduhan, tanpa CDN — tetap jalan offline).
+3. **Produk terlaris** — peringkat 5 produk teratas bulan aktif berdasarkan total kg
+   terjual (`sale_items` join `sales`), ditampilkan sebagai bar horizontal proporsional
+   + jumlah nilai rupiahnya. Tombol urut tidak ada (peringkat sudah dari qty).
+4. **Pelanggan teraktif** — daftar pelanggan bulan aktif dengan **dua tombol urut**:
+   **Total Dibayar** (default) dan **Jumlah Transaksi** — urutan dihitung di sisi
+   klien (Alpine.js getter `sorted`), jadi ganti urut tidak perlu reload. Data baris
+   dikirim sebagai JSON sekali lewat `x-data`.
+
+Data ketiga widget dihitung di `PosController::ringkasan()` (method `ringkasan()`
+dipanggil hanya saat `tab=ringkasan`, jadi tab lain tidak ikut beban query).
+Kalau bulan aktif belum ada penjualan, masing-masing kartu menampilkan pesan
+"Belum ada … bulan ini."
 
 ## Fitur speech-to-text (untuk skripsi)
 Tekan tombol **mikrofon** di kepala form **Transaksi Baru**, lalu ucapkan satu kalimat utuh,

@@ -190,9 +190,63 @@ class PosController extends Controller
         $totalSaldo = (int) SaldoDeduction::where('date', $txDate)->get()->sum(fn ($s) => $s->result());
         $grand = $totalOil + $totalStockMgmt + $totalHutangPel + $totalRemain;
 
+        // --- Widget tab Ringkasan — periode bulan aktif ---
+        [$mStart, $mEnd] = $this->monthRange($activeMonth);
+
+        // Grafik penjualan harian: per tanggal uang masuk, pengeluaran, dan kas bersih
+        $diterimaPerHari = Sale::whereBetween('date', [$mStart, $mEnd])
+            ->selectRaw('date, SUM(paid) AS paid, SUM(paid_kemarin) AS paid_kemarin')
+            ->groupBy('date')
+            ->get()
+            ->keyBy(fn ($r) => $r->date->format('Y-m-d'));
+        $pengeluaranPerHari = Expense::whereBetween('date', [$mStart, $mEnd])
+            ->selectRaw('date, SUM(amount) AS total')
+            ->groupBy('date')
+            ->get()
+            ->keyBy(fn ($r) => $r->date->format('Y-m-d'));
+
+        $grafikHarian = [];
+        $cursor = \DateTimeImmutable::createFromFormat('Y-m-d', $mStart);
+        $lastDay = \DateTimeImmutable::createFromFormat('Y-m-d', $mEnd);
+        while ($cursor <= $lastDay) {
+            $key = $cursor->format('Y-m-d');
+            $diterima = isset($diterimaPerHari[$key])
+                ? (int) $diterimaPerHari[$key]->paid + (int) $diterimaPerHari[$key]->paid_kemarin
+                : 0;
+            $pengeluaran = isset($pengeluaranPerHari[$key]) ? (int) $pengeluaranPerHari[$key]->total : 0;
+            $grafikHarian[] = [
+                'tanggal' => $key,
+                'label' => (string) (int) $cursor->format('j'),
+                'diterima' => $diterima,
+                'pengeluaran' => $pengeluaran,
+                'bersih' => $diterima - $pengeluaran,
+            ];
+            $cursor = $cursor->modify('+1 day');
+        }
+
+        // Produk terlaris — peringkat qty terjual (kg) bulan aktif
+        $produkTerlaris = SaleItem::query()
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->whereBetween('sales.date', [$mStart, $mEnd])
+            ->groupBy('sale_items.name')
+            ->selectRaw('sale_items.name AS name, SUM(sale_items.qty) AS qty, SUM(sale_items.qty * sale_items.price) AS nilai')
+            ->orderByDesc('qty')
+            ->limit(5)
+            ->get();
+
+        // Pelanggan teraktif bulan aktif — total dibayar & jumlah transaksi
+        $pelangganAktif = Sale::whereBetween('date', [$mStart, $mEnd])
+            ->groupBy('name')
+            ->selectRaw('name, COUNT(*) AS trx, SUM(paid) + SUM(paid_kemarin) AS bayar')
+            ->orderByDesc('bayar')
+            ->get()
+            ->map(fn ($r) => ['name' => $r->name, 'trx' => (int) $r->trx, 'bayar' => (int) $r->bayar])
+            ->values();
+
         return compact(
             'totalOil', 'totalStockMgmt', 'totalRemain', 'totalHutangPel', 'totalHutangPri',
-            'totalSaldo', 'grand', 'activeMonth', 'txDate'
+            'totalSaldo', 'grand', 'activeMonth', 'txDate',
+            'grafikHarian', 'produkTerlaris', 'pelangganAktif'
         );
     }
 

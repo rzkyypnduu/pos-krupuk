@@ -102,6 +102,17 @@
         #pos-root #hpSummaryTable td.editing .hp-inp { display:block; }
         #pos-root #hpSummaryTable td.editing .hp-amt, #pos-root #hpSummaryTable td.editing .cell-del { display:none; }
         #pos-root #hpSummaryTable .hp-name-inp { text-align:left; font-family:inherit; font-size:15px; }
+        #pos-root .chart-wrap { position:relative; height:320px; margin-top:6px; }
+        #pos-root .rank-list { display:flex; flex-direction:column; gap:8px; }
+        #pos-root .rank-row { display:grid; grid-template-columns:26px minmax(90px,150px) 1fr auto auto; gap:10px; align-items:center; padding:6px 0; border-bottom:1px dashed var(--line); }
+        #pos-root .rank-row:last-child { border-bottom:none; }
+        #pos-root .rank-no { font-weight:700; color:var(--ink-soft); text-align:center; font-family:var(--mono); }
+        #pos-root .rank-name { font-weight:600; }
+        #pos-root .rank-track { background:#F1EADB; border-radius:4px; height:16px; overflow:hidden; min-width:80px; }
+        #pos-root .rank-bar { display:block; height:100%; background:var(--accent); border-radius:4px; }
+        #pos-root .rank-val { font-family:var(--mono); font-size:14px; white-space:nowrap; }
+        #pos-root .filter-btns { display:flex; gap:8px; flex-wrap:wrap; }
+        #pos-root .filter-btns button.primary { padding:11px 16px; border-radius:7px; font-size:16px; border:none; }
         #pos-root .section-header { margin: 36px 0 18px; padding-bottom: 10px; border-bottom: 3px solid #000000; }
         #pos-root .section-header h2 { font-size: 24px; color: #000000; margin: 0 0 6px 0; }
         #pos-root .section-header p { font-size: 16px; color: #333333; margin: 0; }
