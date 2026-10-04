@@ -249,9 +249,20 @@ lihat `tests/Unit/SpeechParserTest.php` dan `tests/Feature/SpeechParseTest.php`.
 ## Struktur kode yang saya tambahkan di atas skeleton Laravel bawaan
 - `app/Models/` — Product, Sale, SaleItem, OilStock, StockManagement,
   StockRemaining, CustomerLedger, PersonalLedger, SaldoDeduction, Expense, InputLog
-- `app/Http/Controllers/PosController.php` — seluruh logika aplikasi (non-Livewire,
-  form submit + page reload, state lewat query string) + endpoint `parseSpeech`
-  dan pencatatan `input_logs`
+- `app/Http/Controllers/` — dipisah per fitur supaya mudah dibaca:
+  - `PosController.php` — halaman utama `GET /pos` (semua tab), neraca `ringkasan()`, reset bulan/semua
+  - `TransaksiController.php` — simpan/edit transaksi, pembayaran (modal & lunas),
+    bayar kemarin, pengeluaran kas, pencatatan `input_logs`
+  - `SpeechController.php` — endpoint `parseSpeech`
+  - `ProdukController.php` — CRUD produk & data contoh
+  - `StokHasilController.php` — stok minyak, manajemen stok barang, sisa barang
+  - `HutangPelangganController.php` — rekap hutang per pelanggan (grid Excel: edit sel/total, hapus, rename)
+  - `HutangPribadiController.php` — daftar hutang pribadi
+  - `SaldoController.php` — pengurangan saldo
+  - `Concerns/PosHelpers.php` — trait logika bersama (tanggal aktif, parameter URL,
+    lembar hasil salin-tempel per tanggal, pembulatan total, parsing qty koma desimal)
+- `app/Services/HutangService.php` — perhitungan sisa hutang pelanggan (LIFO) +
+  riwayat detail; dipakai PosController & HutangPelangganController
 - `app/Services/SpeechParser.php` — parser rule-based untuk speech-to-text
 - `database/migrations/2026_07_14_*` — 9 migration untuk tabel-tabel di atas,
   plus `2026_09_30_000001_create_input_logs_table.php` dan

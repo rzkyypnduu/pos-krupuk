@@ -2,18 +2,18 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\PosController;
 use App\Models\CustomerLedger;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Services\HutangService;
 use Tests\TestCase;
 
 class PaymentModalTest extends TestCase
 {
-    private function controller(): PosController
+    private function hutang(): HutangService
     {
-        return new PosController();
+        return app(HutangService::class);
     }
 
     /** Ambil isi `<tr>` tabel transaksi yang berisi sale name tertentu (assert per-baris). */
@@ -53,7 +53,7 @@ class PaymentModalTest extends TestCase
         $entries = CustomerLedger::where('name', $name)->get();
         $this->assertCount(0, $entries);
 
-        $proc = $this->controller()->processCustomerDebts($name);
+        $proc = $this->hutang()->processCustomerDebts($name);
         $this->assertSame(0, $proc['totalSisa']);
         $this->assertSame(0, $proc['deposit']);
     }
@@ -103,7 +103,7 @@ class PaymentModalTest extends TestCase
         $this->assertSame(0, CustomerLedger::where('sale_id', $sale->id)
             ->where('type', 'bayar')->count());
         // tabel hutang tidak ikut berkurang oleh pembayaran (entri "tambah" fixture utuh)
-        $proc = $this->controller()->processCustomerDebts($name);
+        $proc = $this->hutang()->processCustomerDebts($name);
         $this->assertSame(350000, $proc['totalSisa']);
         $this->assertSame(0, $proc['deposit']);
     }
@@ -124,7 +124,7 @@ class PaymentModalTest extends TestCase
             'type' => 'bayar', 'note' => 'Bayar',
         ]);
 
-        $proc = $this->controller()->processCustomerDebts($name);
+        $proc = $this->hutang()->processCustomerDebts($name);
 
         // LIFO: 120rb dipotong dari hutang BARU (150rb) dulu → sisa 30rb; hutang lama utuh
         $this->assertCount(2, $proc['activeDebts']);
@@ -163,7 +163,7 @@ class PaymentModalTest extends TestCase
         $this->assertSame(0, $sale->paid);
 
         // pembayaran tidak menyentuh tabel hutang: fixture tetap 200rb, deposit 0
-        $proc = $this->controller()->processCustomerDebts($name);
+        $proc = $this->hutang()->processCustomerDebts($name);
         $this->assertSame(200000, $proc['totalSisa']);
         $this->assertSame(0, $proc['deposit']);
         $this->assertSame(0, CustomerLedger::where('sale_id', $sale->id)
