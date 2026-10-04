@@ -154,7 +154,7 @@ class PosController extends Controller
 
         $ringkasanData = null;
         if ($tab === 'ringkasan') {
-            $ringkasanData = $this->ringkasan($activeMonth, $txDate);
+            $ringkasanData = $this->ringkasan($activeMonth, $txDate, $hpGrandTotal);
         }
 
         $monthLabel = $this->monthLabel($activeMonth);
@@ -176,7 +176,7 @@ class PosController extends Controller
     }
 
     /** Neraca tab Ringkasan — mengikuti lembar tanggal aktif (per hari, bukan bulan). */
-    public function ringkasan(string $activeMonth, string $txDate): array
+    public function ringkasan(string $activeMonth, string $txDate, int $hpGrandTotal): array
     {
         // Neraca mengikuti lembar tanggal aktif (tab hasil per hari; data per tanggal
         // disalin sekali lalu independen — angka bulan tidak dipakai agar tidak
@@ -184,8 +184,9 @@ class PosController extends Controller
         $totalOil = OilStock::where('date', $txDate)->get()->sum(fn ($o) => $o->qty * $o->price);
         $totalStockMgmt = StockManagement::where(fn ($q) => $q->where('date', $txDate)->orWhereNull('date'))->get()->sum(fn ($o) => $o->subtotal());
         $totalRemain = StockRemaining::where('date', $txDate)->get()->sum(fn ($o) => $o->qty * $o->price);
-        $balances = CustomerLedger::balances($txDate);
-        $totalHutangPel = array_sum(array_map(fn ($b) => $b > 0 ? $b : 0, $balances));
+        // Hutang pelanggan memakai angka yang sama dengan tab Hasil & rekap hutang
+        // (LIFO per pelanggan, termasuk deposit) — dihitung di index().
+        $totalHutangPel = $hpGrandTotal;
         $totalHutangPri = (int) PersonalLedger::where('date', $txDate)->sum('amount');
         $totalSaldo = (int) SaldoDeduction::where('date', $txDate)->get()->sum(fn ($s) => $s->result());
         $grand = $totalOil + $totalStockMgmt + $totalHutangPel + $totalRemain;

@@ -148,8 +148,15 @@ Tab Ringkasan mengikuti **bulan dari tanggal aktif** (sama seperti tab Hasil). I
 urut dari atas ke bawah:
 
 1. **Ringkasan neraca & stok** — kartu lama: total stok minyak, manajemen stok,
-   sisa barang, hutang pelanggan, hutang pribadi, pengurangan saldo, lalu total
-   keseluruhan aset. Tetap dihitung per **tanggal aktif**.
+   sisa barang, hutang pelanggan, hutang pribadi, pengurangan saldo, lalu tiga
+   baris hasil (sama persis rumus & angkanya dengan **Ringkasan Hari Ini** di tab Hasil):
+   - **Total keseluruhan aset** = stok minyak + manajemen stok + hutang pelanggan + sisa barang
+   - **Saldo** = total aset − hutang pribadi
+   - **Total** = total aset − pengurangan saldo − hutang pribadi
+   Hutang pelanggan memakai perhitungan LIFO yang sama dengan rekap hutang &
+   tab Hasil (angka `hpGrandTotal` dari `index()`), jadi ketiga angka hasil di
+   kedua tab dijamin identik untuk tanggal yang sama. Neraca tetap dihitung per
+   **tanggal aktif**.
 2. **Grafik penjualan harian** — grafik garis 2 seri per tanggal (1–31) bulan aktif:
    - **Diterima** (oranye) = `SUM(paid) + SUM(paid_kemarin)` tiap hari
    - **Kas bersih** (hijau) = Diterima − Pengeluaran (`expenses`)

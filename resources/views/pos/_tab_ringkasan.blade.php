@@ -15,11 +15,19 @@
             <div class="stat-box"><div class="label">Total hutang pribadi</div><div class="value">{{ rupiah($ringkasanData['totalHutangPri']) }}</div></div>
             <div class="stat-box"><div class="label">Pengurangan saldo (A&minus;B)</div><div class="value">{{ number_format($ringkasanData['totalSaldo'], 0, ',', '.') }}</div></div>
         </div>
-        <div class="stat-box highlight" style="margin-top:14px;">
+        <div class="stat-box highlight" style="margin-top:14px;" title="Total stok minyak + total manajemen stok barang + total hutang pelanggan + total sisa barang">
             <div class="label">Total keseluruhan aset</div>
             <div class="value">{{ rupiah($ringkasanData['grand']) }}</div>
         </div>
-        <p class="note">Rumus mengikuti catatan: total stok minyak + total manajemen stok barang + total hutang pelanggan + total sisa barang. Hutang pribadi dan pengurangan saldo ditampilkan terpisah sebagai informasi tambahan.</p>
+        <div class="stat-box highlight" style="margin-top:8px;" title="Total keseluruhan aset &minus; total hutang pribadi">
+            <div class="label">Saldo</div>
+            <div class="value">{{ rupiah($ringkasanData['grand'] - $ringkasanData['totalHutangPri']) }}</div>
+        </div>
+        <div class="stat-box highlight" style="margin-top:8px;" title="Total keseluruhan aset &minus; pengurangan saldo &minus; total hutang pribadi">
+            <div class="label">Total</div>
+            <div class="value">{{ rupiah($ringkasanData['grand'] - $ringkasanData['totalSaldo'] - $ringkasanData['totalHutangPri']) }}</div>
+        </div>
+        <p class="note">Rumus mengikuti catatan: total aset = total stok minyak + total manajemen stok barang + total hutang pelanggan + total sisa barang; Saldo = total aset &minus; hutang pribadi; Total = total aset &minus; pengurangan saldo &minus; hutang pribadi (sama dengan Ringkasan Hari Ini di tab Hasil).</p>
     </div>
 
     <div class="card">
