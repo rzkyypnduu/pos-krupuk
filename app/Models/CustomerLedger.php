@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class CustomerLedger extends Model
 {
-    protected $fillable = ['date', 'name', 'amount', 'type', 'note', 'sale_id'];
+    protected $fillable = ['date', 'sheet_date', 'name', 'amount', 'type', 'note', 'sale_id'];
 
     protected $casts = [
         'date' => 'date',
@@ -22,13 +22,20 @@ class CustomerLedger extends Model
      * Saldo hutang per pelanggan (dikelompokkan berdasarkan nama).
      * Nilai positif = pelanggan punya hutang, negatif = kelebihan bayar.
      *
+     * @param string|null $sheetDate Lembar hasil tanggal aktif — hanya entri milik
+     *                               tanggal itu (serta entri tanpa lembar/legacy)
+     *                               yang dihitung; lewat null = semua entri.
      * @return array<string, int>
      */
-    public static function balances(): array
+    public static function balances(?string $sheetDate = null): array
     {
         $balances = [];
 
-        foreach (self::all() as $entry) {
+        $entries = $sheetDate === null
+            ? self::all()
+            : self::where(fn ($q) => $q->where('sheet_date', $sheetDate)->orWhereNull('sheet_date'))->get();
+
+        foreach ($entries as $entry) {
             $balances[$entry->name] = ($balances[$entry->name] ?? 0)
                 + ($entry->type === 'tambah' ? $entry->amount : -$entry->amount);
         }

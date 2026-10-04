@@ -1,16 +1,5 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>POS Krupuk</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-
-    @livewireStyles
-
-    <style>
+{{-- Seluruh CSS halaman POS (tema krupuk), di-include dari index.blade.php --}}
+<style>
         #pos-root, #pos-root * { box-sizing: border-box; }
         #pos-root {
             --bg: #FFFFFF; --surface: #FFFFFF; --ink: #000000; --ink-soft: #333333;
@@ -21,16 +10,12 @@
             font-size: 18px; background: var(--bg); color: var(--ink); min-height: 100vh; padding: 0 0 60px 0;
         }
         #pos-root h1, #pos-root h2, #pos-root h3 { font-family: 'Fraunces', Georgia, serif; margin: 0; }
-        #pos-root .month-switch { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; background:#FFFFFF; border:2px solid var(--line); border-radius:9px; padding:6px 12px; flex-shrink:0; }
-        #pos-root .month-switch label { margin:0; font-size:14px; white-space:nowrap; font-weight:700; color:var(--ink); }
-        #pos-root .month-switch input[type="month"] { width:auto; padding:8px 10px; font-size:15px; border:2px solid var(--line); }
-        #pos-root .month-switch .month-label { font-weight:700; font-size:15px; color: var(--accent-dark); white-space:nowrap; }
-        #pos-root .month-nav-btn { font-family:inherit; background:var(--surface); border:2px solid var(--line); border-radius:6px; width:36px; height:36px; cursor:pointer; color:var(--ink); font-size:16px; flex-shrink:0; }
-        #pos-root .month-nav-btn:hover { border-color: var(--accent); background:var(--accent); color:#FFFFFF; }
-        #pos-root .month-switch input:disabled, #pos-root .month-nav-btn:disabled { opacity:.5; cursor:not-allowed; }
+        #pos-root .date-switch { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; background:#FFFFFF; border:2px solid var(--line); border-radius:9px; padding:6px 8px; flex-shrink:0; }
+        #pos-root .date-switch input[type="date"] { border:none; background:transparent; padding:2px 4px; font-family:inherit; font-weight:700; font-size:15px; color: var(--accent-dark); cursor:pointer; }
+        #pos-root .date-switch input[type="date"]:focus { outline:2px solid var(--accent); border-radius:4px; }
         #pos-root .tabs { display:flex; align-items:center; overflow-x:auto; gap:4px; padding: 8px 12px; background: #FFFFFF; border-bottom: 2px solid #000000; position: sticky; top: 0; z-index: 20; }
-        #pos-root .tabs .month-switch { margin-left: auto; }
-        #pos-root .tab-btn { font-family: inherit; font-size: 18px; font-weight: 700; color: #555555; background: transparent; border: none; padding: 14px 20px; cursor: pointer; border-bottom: 4px solid transparent; white-space: nowrap; flex-shrink:0; }
+        #pos-root .tabs .date-switch { margin-left: auto; }
+        #pos-root .tab-btn { font-family: inherit; font-size: 18px; font-weight: 700; color: #555555; background: transparent; border: none; padding: 14px 20px; cursor: pointer; border-bottom: 4px solid transparent; white-space: nowrap; flex-shrink:0; text-decoration:none; }
         #pos-root .tab-btn.active { color: #000000; border-bottom-color: var(--accent); }
         #pos-root .tab-btn:hover { color: #000000; }
         #pos-root main { padding: 24px 28px 0; width: 100%; margin: 0; }
@@ -40,6 +25,7 @@
         #pos-root .card h2 { font-size: 21px; margin-bottom: 16px; }
         #pos-root .card h3 { font-size: 17px; color: #000000; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; font-weight:700; }
         #pos-root label { font-size: 18px; color: #000000; font-weight:700; display:block; margin-bottom:8px; }
+        #pos-root .form-group-label { font-size: 18px; color: #000000; font-weight:700; display:block; margin-bottom:8px; }
         #pos-root input, #pos-root select { font-family: inherit; font-size: 20px; padding: 14px 16px; border: 2px solid var(--line); border-radius: 8px; background: #FFFFFF; color: var(--ink); width: 100%; }
         #pos-root input:focus, #pos-root select:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
         #pos-root .field { margin-bottom: 12px; }
@@ -82,11 +68,40 @@
         #pos-root .note { font-size: 15px; color: #000000; margin-top: 9px; line-height:1.55; }
         #pos-root .sub-section { border-top: 2px solid var(--line); padding-top: 14px; margin-top: 14px; }
         #pos-root .sub-section:first-child { border-top:none; padding-top:0; margin-top:0; }
-        #pos-root .row-actions { display:flex; gap:6px; }
+        #pos-root .row-actions { display:flex; gap:6px; flex-wrap:wrap; }
         #pos-root .warn-price { color: var(--debt); font-size: 13px; font-weight:700; }
         #pos-root .sack-row { display:flex; gap:8px; align-items:center; margin-bottom:7px; }
         #pos-root .sack-row input { flex:1; }
         #pos-root .sack-row .sack-remove-btn { flex-shrink:0; }
+        #pos-root .sack-cell { width:72px; padding:7px 6px; text-align:right; font-family:var(--mono); font-size:15px; border:1px dashed var(--line); border-radius:4px; background:#FFFFFF; }
+        #pos-root .sack-cell:focus { border:1px solid var(--ink); outline:none; background:#FFFDF3; }
+        #pos-root .sack-cell::placeholder { color:#BBBBBB; font-family:inherit; }
+        #pos-root .cell-edit { padding:7px 8px; font-size:15px; border:1px dashed var(--line); border-radius:4px; background:#FFFFFF; }
+        #pos-root .cell-edit:focus { border:1px solid var(--ink); outline:none; background:#FFFDF3; }
+        #pos-root .cell-name { min-width:150px; width:100%; max-width:240px; font-family:inherit; }
+        #pos-root .btn-plus { display:inline-flex; align-items:center; gap:8px; text-decoration:none; line-height:1; }
+        #pos-root .btn-plus svg { display:block; }
+        #pos-root .btn-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border:1.5px solid var(--ink); border-radius:999px; background:#FFFFFF; color:var(--ink); text-decoration:none; flex-shrink:0; }
+        #pos-root .btn-icon:hover { background:var(--ink); color:#FFFFFF; }
+        #pos-root .cell-stack { display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+        #pos-root .cell-stack .sack-cell { cursor:text; }
+        #pos-root .cell-date { font-size:11px; color:var(--ink-soft); font-family:var(--mono); }
+        #pos-root .hp-toolbar .btn-plus { padding:12px 18px; }
+        #pos-root #hpSummaryTable.hp-grid { border-collapse: collapse; }
+        #pos-root #hpSummaryTable.hp-grid th, #pos-root #hpSummaryTable.hp-grid td { border: 1px solid var(--line); }
+        #pos-root #hpSummaryTable .hp-head { background:#E8E0D0; text-align:center; font-weight:700; color:#000000; border-bottom:2px solid #000000; padding:8px 10px; }
+        #pos-root #hpSummaryTable .hp-name-cell { padding:6px 10px; cursor:pointer; }
+        #pos-root #hpSummaryTable .hp-name { border-bottom:1px dashed transparent; }
+        #pos-root #hpSummaryTable .hp-name-cell:hover .hp-name { border-bottom-color:var(--ink-soft); }
+        #pos-root #hpSummaryTable .hp-cell { position:relative; cursor:pointer; padding:6px 22px 6px 10px; }
+        #pos-root #hpSummaryTable .hp-cell.empty-cell { cursor:default; text-align:center; color:var(--ink-soft); padding:6px 10px; }
+        #pos-root #hpSummaryTable .hp-debt-cell:hover, #pos-root #hpSummaryTable .hp-total-cell:hover { background:#FFFDF3; }
+        #pos-root #hpSummaryTable .cell-del { position:absolute; top:2px; right:4px; border:none; background:transparent; color:var(--debt); font-size:15px; line-height:1; cursor:pointer; opacity:0; padding:1px 4px; }
+        #pos-root #hpSummaryTable .hp-debt-cell:hover .cell-del { opacity:1; }
+        #pos-root #hpSummaryTable .hp-inp { display:none; width:100%; box-sizing:border-box; border:1px solid var(--ink); border-radius:3px; padding:3px 6px; font-family:var(--mono); font-size:14px; text-align:right; background:#FFFDF3; }
+        #pos-root #hpSummaryTable td.editing .hp-inp { display:block; }
+        #pos-root #hpSummaryTable td.editing .hp-amt, #pos-root #hpSummaryTable td.editing .cell-del { display:none; }
+        #pos-root #hpSummaryTable .hp-name-inp { text-align:left; font-family:inherit; font-size:15px; }
         #pos-root .section-header { margin: 36px 0 18px; padding-bottom: 10px; border-bottom: 3px solid #000000; }
         #pos-root .section-header h2 { font-size: 24px; color: #000000; margin: 0 0 6px 0; }
         #pos-root .section-header p { font-size: 16px; color: #333333; margin: 0; }
@@ -115,22 +130,87 @@
         #pos-root .pay-confirm-head h2 { font-size:22px; color:#FFFFFF; }
         #pos-root .pay-confirm-head p { margin:5px 0 0; font-size:16px; color:#FFFFFF; }
         #pos-root .pay-confirm-body { padding:22px 24px 24px; }
-        #pos-root .pay-confirm-body .modal-actions { border-top:2px solid var(--line); padding-top:16px; margin-top:20px; display:flex; justify-content:flex-end; gap:8px; }
+        #pos-root .pay-confirm-body .modal-actions { border-top:2px solid var(--line); padding-top:16px; margin-top:20px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+        #pos-root .pay-confirm-modal { max-height:92vh; overflow:auto; }
+        #pos-root .pay-x { flex-shrink:0; width:38px; height:38px; border-radius:50%; border:2px solid rgba(255,255,255,.6); background:rgba(255,255,255,.16); color:#FFFFFF; font-size:24px; line-height:1; cursor:pointer; padding:0; }
+        #pos-root .pay-x:hover { background:rgba(255,255,255,.32); }
+        #pos-root .pay-summary-row { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:11px 13px; border:2px solid var(--line); border-radius:8px; background:#FFF6E9; font-size:15px; }
+        #pos-root .pay-summary-row b { font-family:var(--mono); font-size:17px; }
+        #pos-root .pay-debt-title { margin:16px 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.03em; font-weight:700; color:var(--ink); }
+        #pos-root .pay-debt-title .dim { color:var(--ink-soft); font-weight:600; text-transform:none; letter-spacing:0; }
+        #pos-root .pay-debt-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+        #pos-root .pay-debt-list li { display:flex; align-items:center; gap:9px; padding:9px 12px; border:2px solid var(--line); border-radius:8px; background:#FFFFFF; font-size:15px; }
+        #pos-root .pay-debt-list li.last { border-color:var(--accent); background:#FFF5E8; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+        #pos-root .pay-debt-list .pd-date { font-family:var(--mono); font-size:13px; color:var(--ink-soft); flex-shrink:0; }
+        #pos-root .pay-debt-list .pd-amt { margin-left:auto; font-family:var(--mono); font-weight:700; text-align:right; }
+        #pos-root .pay-field { margin-top:12px; }
+        #pos-root .pay-field label { display:block; font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px; color:var(--ink); }
+        #pos-root .pay-field input[type="text"] { width:100%; font-size:20px; font-family:var(--mono); padding:13px 14px; border:2px solid var(--line); border-radius:8px; background:#FFFFFF; }
+        #pos-root .pay-field input[type="text"]:focus { outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
+        #pos-root .pay-hint { font-size:13.5px; color:var(--ink-soft); margin-top:5px; }
+        #pos-root .pay-summary { margin-top:14px; border-top:2px dashed var(--line); padding-top:10px; display:flex; flex-direction:column; gap:4px; }
+        #pos-root .pay-summary .ps-row { display:flex; justify-content:space-between; gap:10px; font-size:15px; }
+        #pos-root .pay-summary .ps-row b { font-family:var(--mono); }
+        #pos-root .pay-summary .ps-row.warn { color:var(--debt); font-weight:700; }
+        #pos-root .btn-paid-done { background:#E5E7EB !important; color:#6B7280 !important; border-color:#D1D5DB !important; }
+        #pos-root .btn-paid-done:hover { background:#DDE1E6 !important; border-color:#9CA3AF !important; }
+        #pos-root button.btn-pay-open { background:#16A34A !important; color:#FFFFFF !important; border-color:#16A34A !important; }
+        #pos-root button.btn-pay-open:hover { background:#15803D !important; border-color:#15803D !important; }
+        #pos-root .ck-kemarin { display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border:2px solid var(--line); border-radius:7px; background:#FFFFFF; color:var(--ink); font-size:16px; font-weight:600; cursor:pointer; user-select:none; transition:all .15s; margin-bottom:0; }
+        #pos-root .ck-kemarin:hover { border-color:#9CA3AF; }
+        #pos-root .ck-kemarin input[type="checkbox"] { width:18px; height:18px; margin:0; accent-color:#16A34A; cursor:pointer; }
+        #pos-root .ck-kemarin.on { background:#DCFCE7; border-color:#16A34A; color:#15803D; }
+        #pos-root .badge.paid-outline { background:#FFFFFF; color:var(--paid); border:2px solid var(--paid); }
+        #pos-root .status-stack { display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+        #pos-root .flash-error { background:#FDECEC; color:var(--debt); border:2px solid var(--debt); border-radius:8px; padding:12px 16px; margin-bottom:16px; font-weight:600; font-size:15px; }
         [x-cloak] { display: none !important; }
-        /* ======= Transaksi Harian Redesign ======= */
-        #pos-root .tx-layout { display:grid; grid-template-columns:1fr; gap:18px; }
-        @media (min-width:992px) { #pos-root .tx-layout { grid-template-columns:1fr 330px; } }
-        #pos-root .tx-layout > * { min-width:0; }
-
-        #pos-root .tx-form-card { padding:0; overflow:hidden; }
-        #pos-root .tx-form-head { padding:20px 24px 16px; background:var(--ink); color:#FFFFFF; display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; }
-        #pos-root .tx-form-head h2 { font-size:19px; color:#FFFFFF; margin:0; }
-        #pos-root .tx-form-head input[type="date"] { width:auto; padding:10px 14px; font-size:16px; background:rgba(255,255,255,.2); border:2px solid rgba(255,255,255,.4); color:#FFFFFF; border-radius:7px; }
-        #pos-root .tx-form-head input[type="date"]:focus { outline:2px solid var(--accent); border-color:var(--accent); }
-        #pos-root .tx-form-head input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(1); }
-
+        #pos-root .tx-page { display:flex; flex-direction:column; gap:18px; }
+        #pos-root .tx-section { padding:0; overflow:hidden; margin-bottom:0; }
+        #pos-root .tx-page-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; padding:20px 24px; border-bottom:2px solid var(--line); }
+        #pos-root .tx-page-head h2 { font-size:22px; margin:0; }
+        #pos-root .tx-page-date { margin:5px 0 0; font-size:15px; color:var(--ink-soft); font-weight:600; }
+        #pos-root .tx-page-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        #pos-root a.btn-primary { display:inline-flex; align-items:center; gap:6px; text-decoration:none; white-space:nowrap; font-family:inherit; font-weight:700; font-size:17px; background:var(--accent); color:#FFFFFF; padding:13px 22px; border-radius:8px; border:none; cursor:pointer; }
+        #pos-root a.btn-primary:hover { background:var(--accent-dark); color:#FFFFFF; }
+        #pos-root a.btn-ghost { display:inline-flex; align-items:center; gap:6px; text-decoration:none; white-space:nowrap; font-family:inherit; font-weight:600; font-size:16px; background:#FFFFFF; color:var(--ink); border:2px solid var(--line); padding:11px 16px; border-radius:7px; cursor:pointer; }
+        #pos-root a.btn-ghost:hover { border-color:#000000; background:#F0F0F0; color:var(--ink); }
+        #pos-root .btn-ghost-dark { background:rgba(255,255,255,.14); color:#FFFFFF; border-color:rgba(255,255,255,.5); }
+        #pos-root .btn-ghost-dark:hover { background:rgba(255,255,255,.28); border-color:#FFFFFF; color:#FFFFFF; }
+        #pos-root .tx-form-card { padding:0; overflow:hidden; border-bottom:2px solid var(--line); border-radius:0; }
+        #pos-root .tx-section > .table-wrap { padding:6px 24px 10px; }
+        #pos-root .tx-form-head { padding:18px 24px; background:var(--ink); color:#FFFFFF; display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:space-between; }
+        #pos-root .tx-form-head-title { display:flex; flex-direction:column; gap:4px; }
+        #pos-root .tx-form-head-title h2 { font-size:19px; color:#FFFFFF; margin:0; }
+        #pos-root .tx-speech-hint { font-size:14px; color:rgba(255,255,255,.72); }
+        #pos-root .tx-form-head-actions { display:flex; align-items:center; gap:10px; }
+        #pos-root .tx-mic { width:54px; height:54px; border-radius:50%; border:2px solid rgba(255,255,255,.5); background:rgba(255,255,255,.14); line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; transition:background .15s; }
+        #pos-root .tx-mic svg { width:26px; height:26px; fill:#FFFFFF; display:block; }
+        #pos-root .tx-mic:hover { background:rgba(255,255,255,.3); }
+        #pos-root .tx-mic.listening { background:var(--debt); border-color:#FFFFFF; animation:tx-mic-pulse 1.2s infinite; }
+        #pos-root .tx-mic:disabled { opacity:.4; cursor:not-allowed; }
+        @keyframes tx-mic-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(255,255,255,.55); } 50% { box-shadow:0 0 0 12px rgba(255,255,255,0); } }
+        #pos-root .tx-speech-panel { padding:16px 24px; background:#FFF6E9; border-bottom:2px solid var(--line); }
+        #pos-root .tx-speech-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        #pos-root .tx-speech-dot { width:12px; height:12px; border-radius:50%; background:#9AA0A6; flex-shrink:0; }
+        #pos-root .tx-speech-dot.live { background:var(--debt); animation:tx-dot-blink 1s infinite; }
+        #pos-root .tx-speech-dot.ok { background:var(--paid); }
+        #pos-root .tx-speech-dot.err { background:var(--debt); }
+        @keyframes tx-dot-blink { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+        #pos-root .tx-speech-status { font-size:16px; font-weight:600; color:var(--ink); flex:1; min-width:160px; }
+        #pos-root .tx-speech-status.err { color:var(--debt); }
+        #pos-root .tx-speech-status.ok { color:var(--paid); }
+        #pos-root .tx-speech-clear { font-family:inherit; font-size:14px; font-weight:700; background:#FFFFFF; color:var(--ink); border:2px solid var(--line); border-radius:7px; padding:7px 12px; cursor:pointer; }
+        #pos-root .tx-speech-clear:hover { border-color:#000000; background:#F0F0F0; }
+        #pos-root .tx-speech-delete { font-family:inherit; font-size:14px; font-weight:700; background:#FFFFFF; color:var(--debt); border:2px solid var(--debt); border-radius:7px; padding:7px 12px; cursor:pointer; flex-shrink:0; }
+        #pos-root .tx-speech-delete:hover { background:#FDECEC; }
+        #pos-root .tx-speech-transcript { margin-top:10px; font-size:18px; font-weight:600; color:var(--ink); background:#FFFFFF; border:2px dashed var(--line); border-radius:8px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        #pos-root .tx-speech-transcript-text { flex:1; min-width:0; overflow-wrap:anywhere; }
+        #pos-root .tx-speech-items { list-style:none; margin:10px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:8px; }
+        #pos-root .tx-speech-items li { background:#FFFFFF; border:2px solid var(--accent); color:var(--accent-dark); border-radius:20px; padding:7px 14px; font-size:15px; font-weight:700; font-family:var(--mono); }
+        #pos-root .tx-speech-items li.none { border-color:var(--line); color:var(--ink-soft); font-family:inherit; }
+        #pos-root .tx-speech-items li.loose { border-style:dashed; border-color:#B26A00; color:#8A5100; }
+        #pos-root [hidden] { display:none !important; }
         #pos-root .tx-form-body { padding:20px 24px 24px; }
-
         #pos-root .tx-customer-row { display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
         #pos-root .tx-customer-row .tx-name-field { flex:1; min-width:180px; }
         #pos-root .tx-customer-row .tx-name-field input { font-size:20px; padding:14px 16px; height:52px; }
@@ -138,7 +218,6 @@
         #pos-root .tx-customer-row .tx-debt-pill.zero { background:#E0E0E0; color:#000000; border:2px solid #999999; }
         #pos-root .tx-customer-row .tx-debt-pill.debt { background:var(--debt-bg); color:var(--debt); border:2px solid var(--debt); }
         #pos-root .tx-customer-row .tx-debt-pill.credit { background:var(--paid-bg); color:var(--paid); border:2px solid var(--paid); }
-
         #pos-root .tx-product-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr)); gap:12px; margin:8px 0 4px; }
         #pos-root .product-card { background:#FFFFFF; border:2px solid var(--line); border-radius:10px; padding:16px 12px; text-align:center; transition:all .15s; }
         #pos-root .product-card:hover { border-color:var(--accent); box-shadow:0 2px 8px rgba(0,0,0,.2); }
@@ -151,7 +230,6 @@
         #pos-root .product-card-input .qty-input::-webkit-outer-spin-button, #pos-root .product-card-input .qty-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
         #pos-root .product-card-input .qty-input:focus { outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
         #pos-root .product-card-subtotal { font-size:13px; color:var(--ink-soft); margin-top:8px; font-family:var(--mono); }
-
         #pos-root .tx-totals-bar { display:flex; gap:12px; margin:14px 0; flex-wrap:wrap; }
         #pos-root .tx-total-stat { flex:1; min-width:120px; background:#FFFFFF; border:2px solid var(--line); border-radius:10px; padding:14px 16px; text-align:center; }
         #pos-root .tx-total-stat .label { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:#000000; font-weight:700; }
@@ -159,7 +237,6 @@
         #pos-root .tx-total-stat.highlight { background:#000000; border-color:#000000; }
         #pos-root .tx-total-stat.highlight .label { color:#CCCCCC; }
         #pos-root .tx-total-stat.highlight .value { color:#FFFFFF; font-size:23px; }
-
         #pos-root .tx-payment-row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; padding:14px 0; border-top:1px solid var(--line); margin-top:6px; }
         #pos-root .tx-payment-row .tx-paid-group { flex:1; min-width:160px; }
         #pos-root .tx-payment-row .tx-paid-group .input-group { display:flex; gap:6px; }
@@ -171,35 +248,31 @@
         #pos-root .tx-payment-row .tx-status-group .status-box.debt { background:var(--debt-bg); color:var(--debt); border-color:var(--debt); }
         #pos-root .tx-payment-row .tx-status-group .status-box.paid { background:var(--paid-bg); color:var(--paid); border-color:var(--paid); }
         #pos-root .tx-payment-row .tx-status-group .status-box.zero { background:#E0E0E0; color:#000000; border-color:#999999; }
-
         #pos-root .tx-note { margin-top:2px; }
         #pos-root .tx-note input { font-size:17px; padding:12px 16px; }
-
         #pos-root .tx-edit-banner { background:#FFF0C0; border:2px solid #C09830; border-radius:8px; padding:13px 16px; font-size:16px; color:#5A3A00; display:flex; align-items:center; gap:10px; margin-top:12px; font-weight:600; }
         #pos-root .tx-edit-banner button { flex-shrink:0; }
-
         #pos-root .tx-actions { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:14px; }
         #pos-root .tx-actions p { font-size:12.5px; color:var(--ink-soft); margin:0; }
-
-        /* Sidebar cards */
-        #pos-root .tx-sidebar > .card { padding:18px 20px; }
-        #pos-root .tx-sidebar h2 { font-size:17px; margin-bottom:12px; }
+        #pos-root .tx-expense-form { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+        #pos-root .tx-expense-form input { font-size:16px; padding:12px 14px; min-width:80px; }
+        #pos-root .tx-expense-form button { flex-shrink:0; padding:12px 16px; font-size:15px; }
         #pos-root .tx-table { font-size:20px; }
         #pos-root .tx-table th { font-size:16px; padding:16px 16px; }
         #pos-root .tx-table td { padding:18px 16px; }
         #pos-root .tx-table .row-actions { display:flex; gap:10px; }
         #pos-root .tx-table .row-actions button { font-size:16px; padding:12px 18px; }
-        #pos-root .tx-sidebar-stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-        #pos-root .tx-sidebar-stat { padding:13px 15px; border-radius:8px; background:#FFFFFF; border:2px solid var(--line); }
-        #pos-root .tx-sidebar-stat .num { font-family:var(--mono); font-weight:700; font-size:19px; margin-top:2px; }
-        #pos-root .tx-sidebar-stat .num.green { color:var(--paid); }
-        #pos-root .tx-sidebar-stat .num.red { color:var(--debt); }
-        #pos-root .tx-sidebar-stat .lbl { font-size:13px; color:#000000; text-transform:uppercase; letter-spacing:.03em; font-weight:700; }
-
-        #pos-root .tx-sidebar .tx-expense-form { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-        #pos-root .tx-sidebar .tx-expense-form input { font-size:16px; padding:12px 14px; flex:1; min-width:80px; }
-        #pos-root .tx-sidebar .tx-expense-form button { flex-shrink:0; padding:12px 16px; font-size:15px; }
-
+        #pos-root .tx-summ-block { padding:13px 15px; border-radius:8px; background:#FFFFFF; border:2px solid var(--line); }
+        #pos-root .tx-summ-block .lbl { font-size:13px; color:#000000; text-transform:uppercase; letter-spacing:.03em; font-weight:700; }
+        #pos-root .tx-summ-block .num { font-family:var(--mono); font-weight:700; font-size:16px; }
+        #pos-root .tx-summ-block .num.green { color:var(--paid); }
+        #pos-root .tx-summ-block .num.red { color:var(--debt); }
+        #pos-root .tx-summ-row { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:5px 0; border-top:1px solid var(--line); font-size:15px; }
+        #pos-root .tx-summ-row .num { font-family:var(--mono); font-weight:700; font-size:16px; }
+        #pos-root .tx-summ-row .num.green { color:var(--paid); }
+        #pos-root .tx-summ-row .num.red { color:var(--debt); }
+        #pos-root .tx-summ-row.kas { font-weight:700; background:#FFF6E9; border-radius:6px; padding:8px 10px; margin-top:4px; border-top:2px solid var(--ink); }
+        .flash-success { background:var(--paid-bg); color:var(--paid); border:2px solid var(--paid); border-radius:8px; padding:12px 16px; margin-bottom:16px; font-weight:600; font-size:15px; }
         @media (max-width: 520px) {
             #pos-root .modal-backdrop { align-items:flex-end; padding:0; }
             #pos-root .debt-modal { width:100%; border-radius:18px 18px 0 0; max-height:92vh; overflow:auto; }
@@ -207,6 +280,8 @@
             #pos-root .modal-actions { flex-direction:column-reverse; }
             #pos-root .modal-actions button { width:100%; }
             #pos-root .tx-form-head { flex-direction:column; align-items:stretch; }
+            #pos-root .tx-form-head-actions { justify-content:space-between; width:100%; }
+            #pos-root .tx-speech-panel { padding:14px; }
             #pos-root .tx-form-body { padding:14px; }
             #pos-root .tx-product-grid { grid-template-columns:repeat(auto-fill, minmax(100px,1fr)); gap:7px; }
             #pos-root .product-card { padding:9px; }
@@ -215,15 +290,7 @@
             #pos-root .tx-total-stat { text-align:left; display:flex; justify-content:space-between; align-items:center; padding:10px 13px; }
             #pos-root .tx-total-stat .value { margin-top:0; font-size:15px; }
             #pos-root .tx-total-stat.highlight .value { font-size:17px; }
-            #pos-root .tx-sidebar-stat-grid { grid-template-columns:1fr 1fr; }
             #pos-root .tx-actions { flex-direction:column; align-items:stretch; }
             #pos-root .tx-actions button { width:100%; }
         }
-    </style>
-</head>
-<body>
-    {{ $slot }}
-
-    @livewireScripts
-</body>
-</html>
+</style>
