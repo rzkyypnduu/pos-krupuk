@@ -11,6 +11,9 @@
 
     @include('pos._style')
 
+    {{-- Rantai pembayaran (urutan penting, semua defer): window.POS_PAY disuntik oleh
+         _modal_bayar -> pos-pay.js mendaftarkan Alpine.store('pay') saat event alpine:init
+         -> Alpine CDN memulai komponen. pos-scroll.js = efek scroll antar tab. --}}
     <script src="{{ asset('js/pos-pay.js') }}?v={{ filemtime(public_path('js/pos-pay.js')) }}" defer></script>
     <script src="{{ asset('js/pos-scroll.js') }}?v={{ filemtime(public_path('js/pos-scroll.js')) }}" defer></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -47,6 +50,8 @@
     </datalist>
 
     <main>
+        {{-- Semua panel selalu dirender; yang aktif ditandai kelas .active (gaya: _style
+             Bagian "tipografi, switch tanggal, navigasi tab, panel"). Sisipkan sesuai urutan tab. --}}
         <div class="tab-panel {{ $tab === 'transaksi' ? 'active' : '' }}" id="tab-transaksi">
             @include('pos._tab_transaksi')
         </div>
@@ -64,6 +69,7 @@
         </div>
     </main>
 
+    {{-- Modal global (menumpuk di atas panel mana pun): modal hutang pelanggan & modal Bayar. --}}
     @include('pos._modal_hutang')
     @include('pos._modal_bayar')
 </div>

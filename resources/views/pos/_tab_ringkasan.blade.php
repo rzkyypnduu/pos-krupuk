@@ -4,6 +4,7 @@
         $produkTerlaris = $ringkasanData['produkTerlaris'];
         $pelangganAktif = $ringkasanData['pelangganAktif'];
     @endphp
+    {{-- Bagian 1: kartu tanggal & neraca (angka Saldo/Total = rumus sama dengan tab Hasil) --}}
     <div class="card">
         <div style="margin-bottom:14px;"><h2 style="margin-bottom:4px;">Ringkasan neraca &amp; stok</h2><div class="hint" style="margin:0;">Ringkasan harian (stok, hutang, saldo) pindah ke tab Hasil. Neraca di bawah mengikuti tanggal aktif di bagian atas halaman.</div></div>
         <h3 style="margin-bottom:14px;">Tanggal: <span>{{ $ringkasanData['txDate'] }}</span></h3>
@@ -30,12 +31,14 @@
         <p class="note">Rumus mengikuti catatan: total aset = total stok minyak + total manajemen stok barang + total hutang pelanggan + total sisa barang; Saldo = total aset &minus; hutang pribadi; Total = total aset &minus; pengurangan saldo &minus; hutang pribadi (sama dengan Ringkasan Hari Ini di tab Hasil).</p>
     </div>
 
+    {{-- Bagian 2: grafik harian Chart.js lokal (public/js/chart.umd.min.js) --}}
     <div class="card">
         <h2>Grafik penjualan harian</h2>
         <div class="hint" style="margin:0 0 10px;">Periode: bulan {{ $monthLabel }}. <strong>Diterima</strong> = uang masuk (Dibayar + Bayar kemarin); <strong>Kas bersih</strong> = Diterima &minus; Pengeluaran. Sumbu vertikal dalam juta rupiah.</div>
         <div class="chart-wrap"><canvas id="chartHarian"></canvas></div>
     </div>
 
+    {{-- Bagian 3: produk terlaris top-5 (ranking qty dari bulan berjalan) --}}
     <div class="card">
         <h2>Produk terlaris</h2>
         <div class="hint" style="margin:0 0 10px;">Peringkat berdasarkan jumlah terjual (kg) bulan {{ $monthLabel }}.</div>
@@ -60,6 +63,7 @@
         @endif
     </div>
 
+    {{-- Bagian 4: pelanggan teraktif — urutan di-sort di klien oleh Alpine (pelangganAktif) --}}
     <div class="card" x-data="pelangganAktif({{ json_encode($pelangganAktif) }})">
         <h2>Pelanggan teraktif</h2>
         <div class="hint" style="margin:0 0 10px;">Transaksi bulan {{ $monthLabel }} — pilih cara urut:</div>
@@ -92,6 +96,7 @@
         </div>
     </div>
 
+    {{-- Bagian 5: kelola data — reset bulan (PosController::resetMonth) & reset semua --}}
     <div class="card">
         <h2>Kelola data</h2>
         @error('bulan') <div class="field-error" style="margin-bottom:10px;">{{ $message }}</div> @enderror

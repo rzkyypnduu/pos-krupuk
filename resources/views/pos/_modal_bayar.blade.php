@@ -1,3 +1,5 @@
+{{-- Bagian 1: payload window.POS_PAY (data transaksi + sisa hutang) — dibaca pos-pay.js
+     lalu didaftarkan sebagai Alpine.store('pay') sebelum Alpine CDN start. --}}
 @php
     // payload utk modal bayar: data tiap transaksi hari ini + sisa hutang pelanggan (dari sumber yang sama dgn tab hasil)
     $payPayload = [];
@@ -23,6 +25,7 @@
     window.POS_PAY = {!! json_encode($payPayload, JSON_UNESCAPED_SLASHES) !!};
 </script>
 
+{{-- Bagian 2: markup modal Bayar (tombol/field dikendalikan store $store.pay) --}}
 <div class="modal-backdrop" id="payModal" :class="{ 'open': $store.pay.openId !== null }" @click="$store.pay.close()" x-cloak>
     <div class="pay-confirm-modal" @click.stop role="dialog" aria-modal="true" aria-label="Modal pembayaran">
         <div class="pay-confirm-head">

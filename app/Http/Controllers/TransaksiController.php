@@ -118,6 +118,10 @@ class TransaksiController extends Controller
         ], 'Transaksi berhasil disimpan.');
     }
 
+    /**
+     * Bayar lunas satu transaksi (set paid = total, diff = 0, ditandai selesai).
+     * Tidak punya route sendiri — dipanggil internal oleh bayarModal saat 'lunas'.
+     */
     public function bayarPas(Request $request, int $saleId)
     {
         $sale = Sale::find($saleId);

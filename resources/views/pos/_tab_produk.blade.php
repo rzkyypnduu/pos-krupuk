@@ -1,3 +1,4 @@
+{{-- Bagian 1: tambah produk & data contoh (POST → ProdukController::simpanProduk/seedProduk) --}}
 <div class="card">
     <h2>Tambah produk</h2>
     <form method="POST" action="{{ route('pos.simpanProduk') }}">
@@ -21,8 +22,9 @@
     </form>
 </div>
 
-<div class="card">
-    <h2>Daftar produk</h2>
+    {{-- Bagian 2: daftar harga — ubah harga inline (Alpine editing) & hapus --}}
+    <div class="card">
+        <h2>Daftar produk</h2>
     <div class="table-wrap">
         <table>
             <thead><tr><th>Nama</th><th class="num">Harga / kg</th><th></th></tr></thead>

@@ -414,6 +414,7 @@
 </div>
 
 <script>
+// — Format angka (pasangan PHP: rupiah()/fmtKg() di app/helpers.php) —
 function fmtKgJs(value) {
     const n = parseFloat(value) || 0;
     return n % 1 === 0 ? String(n) : String(n).replace('.', ',');
@@ -421,6 +422,7 @@ function fmtKgJs(value) {
 function rupiahJs(value) {
     return 'Rp' + Math.round(parseFloat(value) || 0).toLocaleString('id-ID');
 }
+// — Alpine: form batch & tabel stok manajemen (markup: x-data="mgmtTable(...)" di kartu atas) —
 function stockMgmtForm() {
     return {
         sacks: [''],
@@ -469,6 +471,7 @@ function mgmtTable(rows) {
         },
     };
 }
+// — Alpine: tabel sisa barang (markup: x-data="remainTable(...)" di kartu sisa) —
 function remainTable(rows) {
     return {
         rows: rows || [],
@@ -496,6 +499,7 @@ function remainTable(rows) {
         },
     };
 }
+// — Alpine: tabel hutang pribadi (markup: x-data="hprTable(...)" di kartu hutang pribadi) —
 function hprTable(rows) {
     return {
         rows: rows || [],
@@ -522,6 +526,8 @@ function hprTable(rows) {
         },
     };
 }
+// — Edit inline rekap hutang pelanggan (grid Excel #hpSummaryTable): fetch ke
+//   route /pos/* (HutangPelangganController::adjustDebtCell/adjustTotalDebt/hapusLedgerEntry) —
 const HP_TX = '{{ $txDate }}';
 function hpPost(url, fields) {
     return fetch(url, {

@@ -1,5 +1,9 @@
-{{-- Seluruh CSS halaman POS (tema krupuk), di-include dari index.blade.php --}}
+{{-- Seluruh CSS halaman POS (tema krupuk), di-include dari index.blade.php.
+  Konvensi: semua selector diawali #pos-root (gaya di-scope ke halaman POS);
+  !important hanya untuk override status tombol/badge; bagian diurutkan
+  dasar -> kartu/form/tabel -> widget Ringkasan -> modal -> Transaksi -> responsif. --}}
 <style>
+        {{-- Bagian: variabel tema & dasar --}}
         #pos-root, #pos-root * { box-sizing: border-box; }
         #pos-root {
             --bg: #FFFFFF; --surface: #FFFFFF; --ink: #000000; --ink-soft: #333333;
@@ -9,6 +13,7 @@
             font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 18px; background: var(--bg); color: var(--ink); min-height: 100vh; padding: 0 0 60px 0;
         }
+        {{-- Bagian: tipografi, switch tanggal, navigasi tab, panel --}}
         #pos-root h1, #pos-root h2, #pos-root h3 { font-family: 'Fraunces', Georgia, serif; margin: 0; }
         #pos-root .date-switch { display:flex; align-items:center; gap:8px; flex-wrap:nowrap; background:#FFFFFF; border:2px solid var(--line); border-radius:9px; padding:6px 8px; flex-shrink:0; }
         #pos-root .date-switch input[type="date"] { border:none; background:transparent; padding:2px 4px; font-family:inherit; font-weight:700; font-size:15px; color: var(--accent-dark); cursor:pointer; }
@@ -21,6 +26,7 @@
         #pos-root main { padding: 24px 28px 0; width: 100%; margin: 0; }
         #pos-root .tab-panel { display:none; }
         #pos-root .tab-panel.active { display:block; }
+        {{-- Bagian: kartu, label/form, tombol, tabel generik --}}
         #pos-root .card { background: var(--surface); border: 2px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
         #pos-root .card h2 { font-size: 21px; margin-bottom: 16px; }
         #pos-root .card h3 { font-size: 17px; color: #000000; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; font-weight:700; }
@@ -45,6 +51,7 @@
         #pos-root .num { font-family: var(--mono); text-align: right; white-space: nowrap; }
         #pos-root .table-wrap { overflow-x:auto; }
 
+        {{-- Bagian: baris ringkasan, badge status, kotak statistik, empty state --}}
         #pos-root .summary-line { display:flex; justify-content:space-between; padding: 10px 0; font-size: 17px; border-bottom: 1px dashed var(--line); }
         #pos-root .summary-line:last-child { border-bottom:none; }
         #pos-root .summary-line .val { font-family: var(--mono); font-weight:600; }
@@ -64,6 +71,7 @@
         #pos-root .note { font-size: 15px; color: #000000; margin-top: 9px; line-height:1.55; }
         #pos-root .sub-section { border-top: 2px solid var(--line); padding-top: 14px; margin-top: 14px; }
         #pos-root .sub-section:first-child { border-top:none; padding-top:0; margin-top:0; }
+        {{-- Bagian: tombol aksi baris & sel edit mode Excel (tabel Hasil, #hpSummaryTable) --}}
         #pos-root .row-actions { display:flex; gap:6px; flex-wrap:wrap; }
         #pos-root .warn-price { color: var(--debt); font-size: 13px; font-weight:700; }
         #pos-root .sack-row { display:flex; gap:8px; align-items:center; margin-bottom:7px; }
@@ -95,6 +103,7 @@
         #pos-root #hpSummaryTable td.editing .hp-inp { display:block; }
         #pos-root #hpSummaryTable td.editing .hp-amt, #pos-root #hpSummaryTable td.editing .cell-del { display:none; }
         #pos-root #hpSummaryTable .hp-name-inp { text-align:left; font-family:inherit; font-size:15px; }
+        {{-- Bagian: widget tab Ringkasan (Chart.js, produk terlaris, pelanggan teraktif) --}}
         #pos-root .chart-wrap { position:relative; height:320px; margin-top:6px; }
         #pos-root .rank-list { display:flex; flex-direction:column; gap:8px; }
         #pos-root .rank-row { display:grid; grid-template-columns:26px minmax(90px,150px) 1fr auto auto; gap:10px; align-items:center; padding:6px 0; border-bottom:1px dashed var(--line); }
@@ -110,6 +119,7 @@
         #pos-root .section-header h2 { font-size: 24px; color: #000000; margin: 0 0 6px 0; }
         #pos-root .section-header p { font-size: 16px; color: #333333; margin: 0; }
         #pos-root .section-header:first-child { margin-top: 0; }
+        {{-- Bagian: modal hutang pelanggan + pesan error form (.field-error) --}}
         #pos-root .modal-backdrop { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(44,32,22,.52); }
         #pos-root .modal-backdrop.open { display:flex; }
         #pos-root .debt-modal { width:min(100%,480px); padding:0; overflow:hidden; border:1px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:0 24px 70px rgba(44,32,22,.28); }
@@ -123,6 +133,7 @@
         #pos-root .debt-modal input { min-height:50px; font-size:18px; }
         #pos-root .debt-modal .modal-actions { border-top:2px solid var(--line); padding-top:16px; margin-top:20px; }
         #pos-root .field-error { color: var(--debt); font-size: 14px; margin-top: 4px; font-weight:700; }
+        {{-- Bagian: modal Bayar, tombol status bayar, ceklis "bayar kemarin" (pos-pay.js) --}}
         #pos-root .pay-confirm-modal { width:min(100%,460px); padding:0; max-height:92vh; overflow:auto; border:2px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:0 24px 70px rgba(0,0,0,.28); }
         #pos-root .pay-confirm-head { padding:20px 24px; color:#FFFFFF; background:linear-gradient(135deg,var(--accent-dark),var(--accent)); }
         #pos-root .pay-confirm-head h2 { font-size:22px; color:#FFFFFF; }
@@ -157,8 +168,10 @@
         #pos-root .ck-kemarin.on { background:#DCFCE7; border-color:#16A34A; color:#15803D; }
         #pos-root .badge.paid-outline { background:#FFFFFF; color:var(--paid); border:2px solid var(--paid); }
         #pos-root .status-stack { display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+        {{-- Bagian: flash error & x-cloak --}}
         #pos-root .flash-error { background:#FDECEC; color:var(--debt); border:2px solid var(--debt); border-radius:8px; padding:12px 16px; margin-bottom:16px; font-weight:600; font-size:15px; }
         [x-cloak] { display: none !important; }
+        {{-- Bagian: halaman Transaksi (kartu, form baru/edit, mic speech, tabel, rekap) --}}
         #pos-root .tx-page { display:flex; flex-direction:column; gap:18px; }
         #pos-root .tx-section { padding:0; overflow:hidden; margin-bottom:0; }
         #pos-root .tx-page-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; padding:20px 24px; border-bottom:2px solid var(--line); }
@@ -266,6 +279,7 @@
         #pos-root .tx-summ-row .num.green { color:var(--paid); }
         #pos-root .tx-summ-row .num.red { color:var(--debt); }
         #pos-root .tx-summ-row.kas { font-weight:700; background:#FFF6E9; border-radius:6px; padding:8px 10px; margin-top:4px; border-top:2px solid var(--ink); }
+        {{-- Bagian: flash sukses (global, di luar #pos-root) & responsif layar kecil --}}
         .flash-success { background:var(--paid-bg); color:var(--paid); border:2px solid var(--paid); border-radius:8px; padding:12px 16px; margin-bottom:16px; font-weight:600; font-size:15px; }
         @media (max-width: 520px) {
             #pos-root .modal-backdrop { align-items:flex-end; padding:0; }

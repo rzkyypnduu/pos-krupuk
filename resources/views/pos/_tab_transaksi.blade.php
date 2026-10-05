@@ -20,6 +20,7 @@
     $txDateLabel = \Illuminate\Support\Carbon::parse($txDate)->locale('id')->isoFormat('dddd, D MMMM YYYY');
 @endphp
 
+{{-- Bagian 1: header tanggal, tabel transaksi hari ini, & form baru/edit (id #tx-baru) --}}
 <div class="tx-page">
     <div class="card tx-section" id="tx-baru">
         <div class="tx-page-head">
@@ -234,6 +235,7 @@
         </div>
     </div>
 
+    {{-- Bagian 2: pengeluaran laci (kas keluar harian) --}}
     <div class="card">
         <h2>Pengeluaran Laci</h2>
         <form method="POST" action="{{ route('pos.simpanExpense', $qParams) }}" class="tx-expense-form">
@@ -267,6 +269,7 @@
         </div>
     </div>
 
+    {{-- Bagian 3: rekap hari ini (Diterima/pengeluaran/kas bersih) --}}
     <div class="card" x-data="{ showRecap: true }">
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" @click="showRecap = !showRecap">
             <h2 style="margin-bottom:0;">Ringkasan Hari Ini</h2>
@@ -305,6 +308,7 @@
             </div>
         </div>
 
+    {{-- Bagian 4: rekap bulan berjalan --}}
     <div class="card" x-data="{ showBulan: true }">
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" @click="showBulan = !showBulan">
             <h2 style="margin-bottom:0;">Ringkasan Bulan ({{ $monthLabel }})</h2>
@@ -344,6 +348,8 @@
     </div>
 </div>
 
+{{-- Bagian 5: JS live — updateStatus (parsing Dibayar, pasangan parseRupiah) &
+     recalcTotals (pembulatan, pasangan PosHelpers::roundTotal — lihat komentar di dalamnya) --}}
 <script>
 function updateStatus() {
     var paid = document.getElementById('txPaid').value;
@@ -378,4 +384,6 @@ function recalcTotals() {
     document.getElementById('statusBox').className = 'status-box debt';
 }
 </script>
+{{-- Speech-to-text: browser (pos-speech.js) -> route pos.speech -> SpeechController::parseSpeech
+     -> SpeechParser (rule-based) -> hasil diisi ke form. Skrip memakai bundle local (tanpa CDN). --}}
 <script src="{{ asset('js/pos-speech.js') }}?v={{ filemtime(public_path('js/pos-speech.js')) }}" defer></script>

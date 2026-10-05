@@ -1,3 +1,5 @@
+{{-- Modal tambah hutang pelanggan — tampil saat $debtModalOpen (dibuka dari tab Hasil);
+     POST → HutangPelangganController::simpanHutangPelanggan. --}}
 @if($debtModalOpen)
     <div class="modal-backdrop open" id="debtModal" onclick="window.location.href='{{ route('pos', ['bulan' => $activeMonth, 'tx_date' => $txDate, 'tab' => 'hasil']) }}'">
         <form class="debt-modal" method="POST" action="{{ route('pos.simpanHutangPelanggan', ['bulan' => $activeMonth, 'tx_date' => $txDate, 'tab' => 'hasil']) }}" onclick="event.stopPropagation()">
