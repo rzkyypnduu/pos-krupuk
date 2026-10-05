@@ -18,21 +18,8 @@ class Sale extends Model
         'is_paid_btn_clicked' => 'boolean',
     ];
 
-    public static function roundTotal(int $total): int
-    {
-        $thousands = intdiv($total, 1000) * 1000;
-        $remainder = $total - $thousands;
-
-        return $remainder < 500 ? $thousands : $thousands + 1000;
-    }
-
     public function items()
     {
         return $this->hasMany(SaleItem::class);
-    }
-
-    public function ledgerEntries()
-    {
-        return $this->hasMany(CustomerLedger::class, 'sale_id');
     }
 }

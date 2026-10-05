@@ -9,7 +9,6 @@
     }
     $rawTotal = (int) round($rawTotal);
     $roundedTotal = \App\Http\Controllers\PosController::roundTotal($rawTotal);
-    $paidVal = $txPaid !== null ? $txPaid : 0;
     $paidParsed = $txPaidTouched && !is_null($txPaid) && $txPaid !== '' ? (int) str_replace(',', '.', str_replace('.', '', $txPaid)) : 0;
     $diff = $roundedTotal - $paidParsed;
     $bal = $customerBalances[$txName] ?? 0;

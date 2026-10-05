@@ -13,16 +13,6 @@ class SaleItem extends Model
         'price' => 'integer',
     ];
 
-    public function sale()
-    {
-        return $this->belongsTo(Sale::class);
-    }
-
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
-    }
-
     public function subtotal(): float
     {
         return $this->qty * $this->price;

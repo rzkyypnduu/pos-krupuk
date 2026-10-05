@@ -107,8 +107,7 @@ class TransaksiController extends Controller
                     'price' => $item['product']->price,
                 ]);
             }
-            // transaksi TIDAK menulis customer_ledgers: tabel hutang per pelanggan di tab Hasil
-            // hanya berisi catatan manual (+ Tambah hutang, klik sel, adjust total) & riwayat lama
+            // (aturan "transaksi tidak menulis customer_ledgers" ada di docblock kelas)
         });
 
         $this->logInput($request, $saleId, $name, $note, $items, $roundedTotal, $paid);
@@ -135,8 +134,7 @@ class TransaksiController extends Controller
                 'diff' => 0,
                 'is_paid_btn_clicked' => true,
             ]);
-            // pembayaran tidak menulis customer_ledgers — tabel hutang di tab Hasil
-            // hanya berisi catatan manual & riwayat lama
+            // (aturan "pembayaran tidak menulis customer_ledgers" ada di docblock kelas)
         });
 
         return redirect()->route('pos', $this->makeQueryParams($request, [
@@ -152,8 +150,6 @@ class TransaksiController extends Controller
      *   client modal sudah menambahkan uang kemarin ke form "bayar hari ini" saat OFF,
      *   jadi uangnya pindah alokasi, tidak hilang (Dibayar & Diterima tetap).
      * Isian 0 diperbolehkan (mungkin memang belum bayar sama sekali).
-     * Pembayaran TIDAK menulis customer_ledgers — tabel hutang di tab Hasil hanya
-     * berisi catatan manual & riwayat lama.
      */
     public function bayarModal(Request $request, int $saleId)
     {
@@ -204,7 +200,6 @@ class TransaksiController extends Controller
             // untuk tagihan: isi dengan paid sekarang supaya edit menampilkan angka asli (input terakhir menang)
             'tx_paid' => $sale->paid,
             'tx_paid_touched' => 1,
-            'payment_flow' => 0,
         ]);
 
         foreach ($sale->items as $item) {
@@ -212,12 +207,6 @@ class TransaksiController extends Controller
         }
 
         return redirect()->route('pos', $params);
-    }
-
-    public function markPaidBtn(Request $request, int $saleId)
-    {
-        Sale::where('id', $saleId)->update(['is_paid_btn_clicked' => true]);
-        return back();
     }
 
     /**
@@ -252,14 +241,6 @@ class TransaksiController extends Controller
             'paid_kemarin' => (int) $sale->paid_kemarin,
             'diff' => (int) $sale->diff,
         ]);
-    }
-
-    public function batalEdit(Request $request)
-    {
-        $params = $this->makeQueryParams($request);
-        unset($params['editing'], $params['payment_flow'], $params['tx_paid'], $params['tx_paid_touched']);
-        $params['tab'] = 'transaksi';
-        return redirect()->route('pos', $params);
     }
 
     public function hapusTransaksi(Request $request, int $saleId)

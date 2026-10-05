@@ -39,16 +39,4 @@ class StockManagement extends Model
 
         return $sum;
     }
-
-    public static function totalValue(array $batches, int $defaultPrice = 0): float
-    {
-        $sum = 0;
-        foreach ($batches as $batch) {
-            $batchQty = array_sum($batch['sacks'] ?? []);
-            $batchPrice = $batch['price'] ?? $defaultPrice;
-            $sum += $batchQty * $batchPrice;
-        }
-
-        return $sum;
-    }
 }

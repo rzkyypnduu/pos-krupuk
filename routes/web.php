@@ -17,11 +17,8 @@ Route::get('/pos', [PosController::class, 'index'])->name('pos');
 // Tab Transaksi: simpan/edit transaksi, pembayaran, pengeluaran kas
 Route::post('/pos/transaksi', [TransaksiController::class, 'simpanTransaksi'])->name('pos.simpanTransaksi');
 Route::post('/pos/transaksi/{id}/bayar', [TransaksiController::class, 'bayarModal'])->name('pos.bayarModal');
-Route::post('/pos/transaksi/{id}/bayar-pas', [TransaksiController::class, 'bayarPas'])->name('pos.bayarPas');
 Route::post('/pos/transaksi/{id}/load-for-payment', [TransaksiController::class, 'loadForPayment'])->name('pos.loadForPayment');
-Route::post('/pos/transaksi/{id}/mark-paid', [TransaksiController::class, 'markPaidBtn'])->name('pos.markPaidBtn');
 Route::post('/pos/transaksi/{id}/toggle-kemarin', [TransaksiController::class, 'toggleKemarin'])->name('pos.toggleKemarin');
-Route::post('/pos/transaksi/batal-edit', [TransaksiController::class, 'batalEdit'])->name('pos.batalEdit');
 Route::post('/pos/transaksi/{id}/hapus', [TransaksiController::class, 'hapusTransaksi'])->name('pos.hapusTransaksi');
 
 // Speech-to-text
@@ -44,7 +41,6 @@ Route::post('/pos/stock-mgmt/{id}/sacks', [StokHasilController::class, 'updateSt
 
 Route::post('/pos/stock-mgmt', [StokHasilController::class, 'simpanStockMgmt'])->name('pos.simpanStockMgmt');
 Route::post('/pos/stock-mgmt/{id}/hapus', [StokHasilController::class, 'hapusStockMgmt'])->name('pos.hapusStockMgmt');
-Route::post('/pos/stock-mgmt/{itemId}/batch/{batchId}/hapus', [StokHasilController::class, 'hapusStockBatch'])->name('pos.hapusStockBatch');
 
 // Tab Hasil — sisa barang
 Route::post('/pos/remain', [StokHasilController::class, 'simpanRemain'])->name('pos.simpanRemain');

@@ -11,9 +11,4 @@ class Product extends Model
     protected $casts = [
         'price' => 'integer',
     ];
-
-    public function saleItems()
-    {
-        return $this->hasMany(SaleItem::class);
-    }
 }

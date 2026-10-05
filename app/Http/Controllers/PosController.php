@@ -36,8 +36,6 @@ class PosController extends Controller
         $hpDetailName = $request->query('hp_detail', '');
         $debtModalOpen = $request->query('debt_modal', 0);
         $debtModalName = $request->query('debt_name', '');
-        $pendingPaySaleId = $request->query('pay_confirm', null);
-        $isPaymentFlow = $request->query('payment_flow', 0);
         $showTxForm = $request->has('new') || (bool) $editingSaleId;
 
         $products = Product::orderBy('name')->get();
@@ -160,7 +158,7 @@ class PosController extends Controller
         $monthLabel = $this->monthLabel($activeMonth);
 
         return view('pos.index', compact(
-            'tab', 'activeMonth', 'hpDetailName', 'editingSaleId', 'pendingPaySaleId', 'isPaymentFlow',
+            'tab', 'activeMonth', 'hpDetailName', 'editingSaleId',
             'debtModalOpen', 'debtModalName', 'showTxForm',
             'txDate', 'txName', 'txQty', 'txPaid', 'txPaidTouched', 'txNote',
             'expDate', 'stockMgmtName', 'stockMgmtPrice', 'stockMgmtSacks',

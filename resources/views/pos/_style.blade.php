@@ -32,7 +32,6 @@
         #pos-root .field-row { display:flex; gap:12px; flex-wrap: wrap; }
         #pos-root .field-row > .field { flex: 1; min-width: 150px; }
         #pos-root .hint { font-size:15px; color: var(--ink-soft); margin: -4px 0 12px; }
-        #pos-root .hint.debt-hint { color: var(--debt); font-weight:600; }
         #pos-root button.primary { font-family: inherit; font-weight: 700; font-size: 17px; background: var(--accent); color: #FFFFFF; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; }
         #pos-root button.primary:hover { background: var(--accent-dark); }
         #pos-root button.ghost { font-family: inherit; font-weight: 600; font-size: 16px; background: #FFFFFF; color: var(--ink); border: 2px solid var(--line); padding: 11px 16px; border-radius: 7px; cursor: pointer; }
@@ -43,12 +42,9 @@
         #pos-root th { text-align:left; font-size: 14px; text-transform: uppercase; letter-spacing: .03em; color: #000000; border-bottom: 3px solid #000000; padding: 12px 12px; font-weight:700; }
         #pos-root td { padding: 14px 12px; border-bottom: 2px solid #CCCCCC; vertical-align: top; }
         #pos-root tr:last-child td { border-bottom: none; }
-        #pos-root tr.group-row td { background:#E8E0D0; font-weight:700; border-top: 3px solid #000000; }
         #pos-root .num { font-family: var(--mono); text-align: right; white-space: nowrap; }
         #pos-root .table-wrap { overflow-x:auto; }
-        #pos-root .qty-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; margin: 10px 0; }
-        #pos-root .qty-item label { font-size: 15px; margin-bottom:5px; }
-        #pos-root .qty-item input { padding: 11px 12px; font-size: 16.5px; }
+
         #pos-root .summary-line { display:flex; justify-content:space-between; padding: 10px 0; font-size: 17px; border-bottom: 1px dashed var(--line); }
         #pos-root .summary-line:last-child { border-bottom:none; }
         #pos-root .summary-line .val { font-family: var(--mono); font-weight:600; }
@@ -83,9 +79,6 @@
         #pos-root .btn-plus svg { display:block; }
         #pos-root .btn-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border:1.5px solid var(--ink); border-radius:999px; background:#FFFFFF; color:var(--ink); text-decoration:none; flex-shrink:0; }
         #pos-root .btn-icon:hover { background:var(--ink); color:#FFFFFF; }
-        #pos-root .cell-stack { display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
-        #pos-root .cell-stack .sack-cell { cursor:text; }
-        #pos-root .cell-date { font-size:11px; color:var(--ink-soft); font-family:var(--mono); }
         #pos-root .hp-toolbar .btn-plus { padding:12px 18px; }
         #pos-root #hpSummaryTable.hp-grid { border-collapse: collapse; }
         #pos-root #hpSummaryTable.hp-grid th, #pos-root #hpSummaryTable.hp-grid td { border: 1px solid var(--line); }
@@ -117,12 +110,6 @@
         #pos-root .section-header h2 { font-size: 24px; color: #000000; margin: 0 0 6px 0; }
         #pos-root .section-header p { font-size: 16px; color: #333333; margin: 0; }
         #pos-root .section-header:first-child { margin-top: 0; }
-        #hpSummaryTable th.mat-col { background: #E8E0D0; text-align: right; color:#000000; font-weight:700; border-bottom:2px solid #000000; }
-        #hpSummaryTable td.mat-col { background: #FFFFFF; border-left: 2px solid #CCCCCC; cursor:pointer; }
-        #hpSummaryTable td.mat-col:hover { background: #FFE8B0; }
-        #hpSummaryTable td.mat-col.empty-cell { cursor: default; }
-        #hpSummaryTable td.mat-col.empty-cell:hover { background: #FFFFFF; }
-        #hpSummaryTable .hp-toolbar { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
         #pos-root .modal-backdrop { position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(44,32,22,.52); }
         #pos-root .modal-backdrop.open { display:flex; }
         #pos-root .debt-modal { width:min(100%,480px); padding:0; overflow:hidden; border:1px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:0 24px 70px rgba(44,32,22,.28); }
@@ -136,17 +123,14 @@
         #pos-root .debt-modal input { min-height:50px; font-size:18px; }
         #pos-root .debt-modal .modal-actions { border-top:2px solid var(--line); padding-top:16px; margin-top:20px; }
         #pos-root .field-error { color: var(--debt); font-size: 14px; margin-top: 4px; font-weight:700; }
-        #pos-root .pay-confirm-modal { width:min(100%,460px); padding:0; overflow:hidden; border:2px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:0 24px 70px rgba(0,0,0,.28); }
+        #pos-root .pay-confirm-modal { width:min(100%,460px); padding:0; max-height:92vh; overflow:auto; border:2px solid var(--line); border-radius:16px; background:var(--surface); box-shadow:0 24px 70px rgba(0,0,0,.28); }
         #pos-root .pay-confirm-head { padding:20px 24px; color:#FFFFFF; background:linear-gradient(135deg,var(--accent-dark),var(--accent)); }
         #pos-root .pay-confirm-head h2 { font-size:22px; color:#FFFFFF; }
         #pos-root .pay-confirm-head p { margin:5px 0 0; font-size:16px; color:#FFFFFF; }
         #pos-root .pay-confirm-body { padding:22px 24px 24px; }
         #pos-root .pay-confirm-body .modal-actions { border-top:2px solid var(--line); padding-top:16px; margin-top:20px; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
-        #pos-root .pay-confirm-modal { max-height:92vh; overflow:auto; }
         #pos-root .pay-x { flex-shrink:0; width:38px; height:38px; border-radius:50%; border:2px solid rgba(255,255,255,.6); background:rgba(255,255,255,.16); color:#FFFFFF; font-size:24px; line-height:1; cursor:pointer; padding:0; }
         #pos-root .pay-x:hover { background:rgba(255,255,255,.32); }
-        #pos-root .pay-summary-row { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:11px 13px; border:2px solid var(--line); border-radius:8px; background:#FFF6E9; font-size:15px; }
-        #pos-root .pay-summary-row b { font-family:var(--mono); font-size:17px; }
         #pos-root .pay-debt-title { margin:16px 0 8px; font-size:14px; text-transform:uppercase; letter-spacing:.03em; font-weight:700; color:var(--ink); }
         #pos-root .pay-debt-title .dim { color:var(--ink-soft); font-weight:600; text-transform:none; letter-spacing:0; }
         #pos-root .pay-debt-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
@@ -264,7 +248,6 @@
         #pos-root .tx-edit-banner { background:#FFF0C0; border:2px solid #C09830; border-radius:8px; padding:13px 16px; font-size:16px; color:#5A3A00; display:flex; align-items:center; gap:10px; margin-top:12px; font-weight:600; }
         #pos-root .tx-edit-banner button { flex-shrink:0; }
         #pos-root .tx-actions { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:14px; }
-        #pos-root .tx-actions p { font-size:12.5px; color:var(--ink-soft); margin:0; }
         #pos-root .tx-expense-form { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
         #pos-root .tx-expense-form input { font-size:16px; padding:12px 14px; min-width:80px; }
         #pos-root .tx-expense-form button { flex-shrink:0; padding:12px 16px; font-size:15px; }

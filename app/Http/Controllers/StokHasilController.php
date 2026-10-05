@@ -121,19 +121,6 @@ class StokHasilController extends Controller
         ]);
     }
 
-    public function hapusStockBatch(Request $request, int $itemId, string $batchId)
-    {
-        $item = StockManagement::find($itemId);
-        if (!$item) return back();
-        $batches = collect($item->batches ?? [])->reject(fn ($b) => ($b['id'] ?? '') === $batchId)->values()->all();
-        if (empty($batches)) {
-            $item->delete();
-        } else {
-            $item->update(['batches' => $batches]);
-        }
-        return back()->with('success', 'Batch dihapus.');
-    }
-
     // ---------- Sisa barang ----------
 
     public function simpanRemain(Request $request)

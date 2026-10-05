@@ -13,11 +13,6 @@ class CustomerLedger extends Model
         'amount' => 'integer',
     ];
 
-    public function sale()
-    {
-        return $this->belongsTo(Sale::class);
-    }
-
     /**
      * Saldo hutang per pelanggan (dikelompokkan berdasarkan nama).
      * Nilai positif = pelanggan punya hutang, negatif = kelebihan bayar.

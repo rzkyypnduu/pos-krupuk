@@ -100,7 +100,7 @@
             <input type="hidden" name="bulan" value="{{ $activeMonth }}">
             <button type="submit" class="ghost danger">Hapus data bulan ini saja</button>
         </form>
-        <form method="POST" action="{{ route('pos.resetAll') }}" style="display:inline;" onsubmit="return confirm('Yakin hapus SEMUA data POS (semua bulan)? Tindakan ini tidak bisa dibatalkan.')" style="margin-left:8px;">
+        <form method="POST" action="{{ route('pos.resetAll') }}" style="display:inline;" onsubmit="return confirm('Yakin hapus SEMUA data POS (semua bulan)? Tindakan ini tidak bisa dibatalkan.')">
             @csrf
             <button type="submit" class="ghost danger" style="margin-left:8px;">Hapus SEMUA data (semua bulan)</button>
         </form>
