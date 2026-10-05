@@ -12,7 +12,9 @@ if (! function_exists('rupiah')) {
 
 if (! function_exists('fmtKg')) {
     /**
-     * Format kilogram: 1 -> "1", 1.5 -> "1,5".
+     * Format kilogram (2 desimal, tanpa nol menggantung): 1 -> "1", 1.5 -> "1,5", 2.25 -> "2,25".
+     * Pasangan JS-nya fmtKgJs() di _tab_hasil.blade.php — keduanya harus menghasilkan
+     * angka yang sama untuk nilai yang sama.
      */
     function fmtKg(int|float|null $qty): string
     {
@@ -21,6 +23,6 @@ if (! function_exists('fmtKg')) {
             return (string) (int) $qty;
         }
 
-        return str_replace('.', ',', rtrim(sprintf('%.1f', $qty), '0'));
+        return str_replace('.', ',', rtrim(rtrim(sprintf('%.2f', $qty), '0'), '.'));
     }
 }

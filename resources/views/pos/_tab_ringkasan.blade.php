@@ -94,6 +94,7 @@
 
     <div class="card">
         <h2>Kelola data</h2>
+        @error('bulan') <div class="field-error" style="margin-bottom:10px;">{{ $message }}</div> @enderror
         <form method="POST" action="{{ route('pos.resetMonth') }}" style="display:inline;" onsubmit="return confirm('Hapus semua data bulan {{ $monthLabel }}? Tindakan ini tidak bisa dibatalkan.')">
             @csrf
             <input type="hidden" name="bulan" value="{{ $activeMonth }}">

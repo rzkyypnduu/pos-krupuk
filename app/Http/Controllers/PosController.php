@@ -253,7 +253,8 @@ class PosController extends Controller
 
     public function resetMonth(Request $request)
     {
-        $bulan = (string) $request->query('bulan', '');
+        // input() membaca body POST (hidden input "bulan") sekaligus query string lama.
+        $bulan = (string) $request->input('bulan', '');
         if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $bulan)) {
             return back()->withErrors(['bulan' => 'Pilih bulan yang valid dulu.']);
         }

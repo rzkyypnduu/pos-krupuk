@@ -15,7 +15,7 @@
     $bal = $customerBalances[$txName] ?? 0;
 
     $qParams = ['bulan' => $activeMonth, 'tab' => 'transaksi', 'tx_date' => $txDate];
-    $openForm = $showTxForm || $errors->has('txName') || $errors->has('txQty');
+    $openForm = $showTxForm || $errors->has('txName') || $errors->has('txQty') || $errors->has('editing_sale_id');
     $formParams = array_merge($qParams, request()->has('new') ? ['new' => 1] : []);
     $newTxParams = ['bulan' => $activeMonth, 'tab' => 'transaksi', 'tx_date' => $txDate, 'new' => 1];
     $txDateLabel = \Illuminate\Support\Carbon::parse($txDate)->locale('id')->isoFormat('dddd, D MMMM YYYY');
@@ -62,6 +62,7 @@
                     <ul class="tx-speech-items" id="txSpeechItems" hidden></ul>
                 </div>
                 <div class="tx-form-body">
+                    @error('editing_sale_id') <div class="field-error" style="margin-bottom:10px;">{{ $message }}</div> @enderror
                     <form method="POST" action="{{ route('pos.simpanTransaksi', $formParams) }}" id="txForm">
                         @csrf
                         <input type="hidden" name="txDate" value="{{ $txDate }}">

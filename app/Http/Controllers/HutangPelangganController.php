@@ -119,6 +119,10 @@ class HutangPelangganController extends Controller
 
     public function adjustTotalDebt(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string',
+            'new_total' => 'required|integer|min:0',
+        ]);
         $name = $request->input('name');
         $newTotal = (int) $request->input('new_total');
         $sheetDate = $this->activeDate($request);

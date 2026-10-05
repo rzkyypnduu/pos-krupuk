@@ -43,6 +43,16 @@ class TransaksiController extends Controller
             }
         }
 
+        // Edit transaksi yang ID-nya sudah tidak ada (mis. dihapus tab lain) harus
+        // ditolak SEBELUM transaksi — kalau tidak, user tetap dapat pesan "berhasil"
+        // padahal tidak ada data tersimpan.
+        $editingId = $request->input('editing_sale_id');
+        if ($editingId && !Sale::whereKey($editingId)->exists()) {
+            return back()->withErrors([
+                'editing_sale_id' => 'Transaksi yang diedit sudah tidak ditemukan (mungkin sudah dihapus). Muat ulang halaman lalu coba lagi.',
+            ]);
+        }
+
         $rawTotal = (int) round(array_sum(array_map(fn ($i) => $i['qty'] * $i['product']->price, $items)));
         $roundedTotal = self::roundTotal($rawTotal);
         $paidTouched = $request->input('tx_paid_touched', 0);
