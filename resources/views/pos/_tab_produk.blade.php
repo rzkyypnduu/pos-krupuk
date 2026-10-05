@@ -31,7 +31,7 @@
                     <tr>
                         <td>{{ $p->name }}</td>
                         <td class="num">{!! $p->price ? rupiah($p->price) : '<span class="warn-price">belum diatur</span>' !!}</td>
-                        <td x-data="{ editing: false }">
+                        <td x-data="{ editing: {{ $errors->has('price') ? 'true' : 'false' }} }">
                             <div class="row-actions">
                             <div x-show="!editing">
                                 <button type="button" class="ghost" @click="editing = true">Ubah harga</button>
@@ -39,7 +39,7 @@
                             <div x-show="editing" style="display:flex;gap:6px;align-items:center;">
                                 <form method="POST" action="{{ route('pos.ubahHarga', $p->id) }}" style="display:flex;gap:6px;align-items:center;">
                                     @csrf
-                                    <input type="number" name="price" value="{{ $p->price }}" min="0" step="500" style="width:120px;padding:8px 10px;font-size:15px;">
+                                    <input type="number" name="price" value="{{ old('price', $p->price) }}" min="0" step="500" style="width:120px;padding:8px 10px;font-size:15px;">@error('price') <div class="field-error">{{ $message }}</div> @enderror
                                     <button type="submit" class="primary" style="padding:8px 14px;font-size:14px;">OK</button>
                                 </form>
                                 <button type="button" class="ghost" @click="editing = false" style="padding:8px 14px;font-size:14px;">Batal</button>

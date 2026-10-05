@@ -37,7 +37,7 @@ class HutangPelangganController extends Controller
             'type' => 'tambah',
             'note' => $request->input('debtModalNote') ?: 'Tambah hutang manual',
         ]);
-        return redirect()->route('pos', $this->makeQueryParams($request, ['tab' => 'hasil']))->with('success', 'Hutang ditambahkan.');
+        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Hutang ditambahkan.');
     }
 
     public function hapusLedgerEntry(Request $request, int $id)
@@ -52,11 +52,7 @@ class HutangPelangganController extends Controller
         $entry->delete();
         if ($request->expectsJson()) {
             $proc = $this->hutang->processCustomerDebts($name, $this->activeDate($request));
-            return response()->json([
-                'ok' => true,
-                'activeDebts' => $proc['activeDebts'],
-                'totalSisa' => $proc['totalSisa'],
-            ]);
+            return $this->debtJson($proc);
         }
         return back()->with('success', 'Entri dihapus.');
     }
@@ -108,11 +104,7 @@ class HutangPelangganController extends Controller
 
         $proc = $this->hutang->processCustomerDebts($entry->name, $sheetDate);
         if ($request->expectsJson()) {
-            return response()->json([
-                'ok' => true,
-                'activeDebts' => $proc['activeDebts'],
-                'totalSisa' => $proc['totalSisa'],
-            ]);
+            return $this->debtJson($proc);
         }
         return back()->with('success', 'Hutang disesuaikan.');
     }
@@ -140,12 +132,18 @@ class HutangPelangganController extends Controller
         }
         $proc = $this->hutang->processCustomerDebts($name, $sheetDate);
         if ($request->expectsJson()) {
-            return response()->json([
-                'ok' => true,
-                'activeDebts' => $proc['activeDebts'],
-                'totalSisa' => $proc['totalSisa'],
-            ]);
+            return $this->debtJson($proc);
         }
         return back()->with('success', 'Total hutang disesuaikan.');
+    }
+
+    /** Respons JSON standar edit hutang: daftar entri aktif + total sisa (dipakai Alpine). */
+    private function debtJson(array $proc)
+    {
+        return response()->json([
+            'ok' => true,
+            'activeDebts' => $proc['activeDebts'],
+            'totalSisa' => $proc['totalSisa'],
+        ]);
     }
 }

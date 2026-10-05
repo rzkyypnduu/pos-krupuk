@@ -12,6 +12,14 @@ use Illuminate\Http\Request;
  */
 class SpeechController extends Controller
 {
+    /** Skor kandidat N-best: per item cocok, bonus bila nama terisi, penalti per item "loose". */
+    private const SCORE_PER_ITEM = 10;
+    private const SCORE_NAME_BONUS = 5;
+
+    public function __construct(private SpeechParser $parser)
+    {
+    }
+
     public function parseSpeech(Request $request)
     {
         $request->validate([
@@ -23,7 +31,6 @@ class SpeechController extends Controller
         ]);
 
         $products = Product::orderBy('name')->get();
-        $parser = new SpeechParser();
 
         // Browser mengirim beberapa kandidat hasil N-best; pilih yang paling masuk akal.
         $candidates = [$request->input('text', '')];
@@ -37,9 +44,11 @@ class SpeechController extends Controller
         $best = null;
         $bestScore = PHP_INT_MIN;
         foreach ($candidates as $candidate) {
-            $parsed = $parser->parse($candidate, $products);
+            $parsed = $this->parser->parse($candidate, $products);
             $loose = count(array_filter($parsed['items'], fn ($i) => $i['confidence'] === 'loose'));
-            $score = count($parsed['items']) * 10 + ($parsed['name'] !== null && $parsed['name'] !== '' ? 5 : 0) - $loose;
+            $score = count($parsed['items']) * self::SCORE_PER_ITEM
+                + ($parsed['name'] !== null && $parsed['name'] !== '' ? self::SCORE_NAME_BONUS : 0)
+                - $loose;
             if ($score > $bestScore) {
                 $bestScore = $score;
                 $best = $parsed;

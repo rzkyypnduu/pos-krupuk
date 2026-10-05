@@ -32,9 +32,7 @@ class StokHasilController extends Controller
             'qty' => $request->input('oilQty'),
             'price' => (int) ($request->input('oilPrice') ?? 0),
         ]);
-        return redirect()->route('pos', $this->makeQueryParams($request, [
-            'tab' => 'hasil'
-        ]))->with('success', 'Stok minyak disimpan.');
+        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Stok minyak disimpan.');
     }
 
     public function hapusOil(Request $request)
@@ -76,9 +74,7 @@ class StokHasilController extends Controller
                 'batches' => [$batch],
             ]);
         }
-        return redirect()->route('pos', $this->makeQueryParams($request, [
-            'tab' => 'hasil'
-        ]))->with('success', 'Stok barang ditambahkan.');
+        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Stok barang ditambahkan.');
     }
 
     public function hapusStockMgmt(Request $request, int $id)
@@ -97,7 +93,7 @@ class StokHasilController extends Controller
         $input = $request->input('sacks');
         $sacks = [];
         foreach (is_array($input) ? $input : [] as $value) {
-            $qty = static::parseQty($value);
+            $qty = static::parseDecimal($value);
             if ($qty !== null && $qty > 0) {
                 $sacks[] = $qty;
             }
@@ -138,9 +134,7 @@ class StokHasilController extends Controller
             'qty' => $request->input('remainQty'),
             'price' => (int) ($request->input('remainPrice') ?? 0),
         ]);
-        return redirect()->route('pos', $this->makeQueryParams($request, [
-            'tab' => 'hasil'
-        ]))->with('success', 'Sisa barang ditambahkan.');
+        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Sisa barang ditambahkan.');
     }
 
     /** Simpan edit inline (mode Excel) untuk satu baris sisa barang. */
@@ -154,7 +148,7 @@ class StokHasilController extends Controller
         if ($name !== '') {
             $row->name = $name;
         }
-        $row->qty = static::parseQty($request->input('qty')) ?? 0;
+        $row->qty = static::parseDecimal($request->input('qty')) ?? 0;
         $row->price = max(0, (int) ($request->input('price') ?? 0));
         $row->save();
         return response()->json([

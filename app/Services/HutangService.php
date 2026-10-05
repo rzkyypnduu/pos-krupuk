@@ -18,11 +18,9 @@ class HutangService
      */
     public function processCustomerDebts(string $name, ?string $sheetDate = null): array
     {
-        $query = CustomerLedger::where('name', $name);
-        if ($sheetDate !== null) {
-            $query->where(fn ($q) => $q->where('sheet_date', $sheetDate)->orWhereNull('sheet_date'));
-        }
-        $entries = $query->orderBy('date')->orderBy('id')->get();
+        $entries = CustomerLedger::forSheet($sheetDate)
+            ->where('name', $name)
+            ->orderBy('date')->orderBy('id')->get();
         $debts = [];
         $deposit = 0;
         foreach ($entries as $l) {
@@ -48,11 +46,9 @@ class HutangService
     /** Riwayat lengkap satu pelanggan (untuk panel detail) dengan saldo berjalan. */
     public function hpDetailEntries(string $name, ?string $sheetDate = null)
     {
-        $query = CustomerLedger::where('name', $name);
-        if ($sheetDate !== null) {
-            $query->where(fn ($q) => $q->where('sheet_date', $sheetDate)->orWhereNull('sheet_date'));
-        }
-        $entries = $query->orderBy('date')->orderBy('id')->get();
+        $entries = CustomerLedger::forSheet($sheetDate)
+            ->where('name', $name)
+            ->orderBy('date')->orderBy('id')->get();
         $running = 0;
         $sales = Sale::whereIn('id', $entries->pluck('sale_id')->filter()->unique())->get()->keyBy('id');
         return $entries->map(function ($l) use (&$running, $sales) {

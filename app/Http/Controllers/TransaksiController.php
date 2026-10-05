@@ -34,7 +34,7 @@ class TransaksiController extends Controller
         }
         $items = [];
         foreach ($qtyInputs as $productId => $qty) {
-            $qty = self::parseQty($qty);
+            $qty = static::parseDecimal($qty);
             if ($qty !== null && $qty > 0) {
                 $product = Product::find($productId);
                 if ($product) {
@@ -54,10 +54,10 @@ class TransaksiController extends Controller
         }
 
         $rawTotal = (int) round(array_sum(array_map(fn ($i) => $i['qty'] * $i['product']->price, $items)));
-        $roundedTotal = self::roundTotal($rawTotal);
+        $roundedTotal = static::roundTotal($rawTotal);
         $paidTouched = $request->input('tx_paid_touched', 0);
         $paidVal = $request->input('tx_paid');
-        $paid = $paidTouched && !is_null($paidVal) && $paidVal !== '' ? (int) str_replace(',', '.', str_replace('.', '', $paidVal)) : 0;
+        $paid = $paidTouched ? parseRupiah($paidVal) : 0;
 
         // tanpa produk diizinkan asalkan kolom Dibayar diisi (kasus: hari ini hanya bayar hutang)
         if (empty($items) && $paid <= 0) {
@@ -113,9 +113,9 @@ class TransaksiController extends Controller
         $this->logInput($request, $saleId, $name, $note, $items, $roundedTotal, $paid);
 
         // sukses: tutup form Transaksi Baru (buang query new/editing dari URL tujuan)
-        return redirect()->route('pos', $this->makeQueryParams($request, [
+        return $this->redirectToPos($request, [
             'tab' => 'transaksi', 'tx_date' => $date, 'new' => null, 'editing' => null,
-        ]))->with('success', 'Transaksi berhasil disimpan.');
+        ], 'Transaksi berhasil disimpan.');
     }
 
     public function bayarPas(Request $request, int $saleId)
@@ -137,9 +137,7 @@ class TransaksiController extends Controller
             // (aturan "pembayaran tidak menulis customer_ledgers" ada di docblock kelas)
         });
 
-        return redirect()->route('pos', $this->makeQueryParams($request, [
-            'tab' => 'transaksi'
-        ]))->with('success', 'Pembayaran lunas.');
+        return $this->redirectToPos($request, ['tab' => 'transaksi'], 'Pembayaran lunas.');
     }
 
     /**
@@ -162,7 +160,7 @@ class TransaksiController extends Controller
             return $this->bayarPas($request, $saleId);
         }
 
-        $parseAmount = fn ($key) => (int) preg_replace('/\D+/', '', (string) $request->input($key, '0'));
+        $parseAmount = fn ($key) => parseRupiah($request->input($key, '0'));
         $pakaiKemarin = (bool) $request->input('pakai_kemarin');
         $payKemarin = $pakaiKemarin ? $parseAmount('bayar_kemarin') : 0;
         $payHariIni = $parseAmount('bayar_hari_ini');
@@ -180,9 +178,7 @@ class TransaksiController extends Controller
             ]);
         });
 
-        return redirect()->route('pos', $this->makeQueryParams($request, [
-            'tab' => 'transaksi'
-        ]))->with('success', 'Pembayaran tercatat.');
+        return $this->redirectToPos($request, ['tab' => 'transaksi'], 'Pembayaran tercatat.');
     }
 
     public function loadForPayment(Request $request, int $saleId)
@@ -262,9 +258,9 @@ class TransaksiController extends Controller
             'amount' => $amount,
             'note' => $request->input('expNote') ?: null,
         ]);
-        return redirect()->route('pos', $this->makeQueryParams($request, [
-            'tab' => 'transaksi', 'exp_date' => $request->input('expDate') ?: now()->toDateString()
-        ]))->with('success', 'Pengeluaran dicatat.');
+        return $this->redirectToPos($request, [
+            'tab' => 'transaksi', 'exp_date' => $request->input('expDate') ?: now()->toDateString(),
+        ], 'Pengeluaran dicatat.');
     }
 
     public function hapusExpense(Request $request, int $id)
@@ -349,7 +345,7 @@ class TransaksiController extends Controller
     /** Bandingkan hasil parser dengan nilai akhir form (ground truth). */
     private function compareParsed(array $parsed, array $final): array
     {
-        $nameMatch = $this->sameName($parsed['name'] ?? null, $final['name']);
+        $nameMatch = $this->sameText($parsed['name'] ?? null, $final['name']);
 
         $qtyMatch = [];
         $parsedQty = [];
@@ -383,20 +379,16 @@ class TransaksiController extends Controller
         ];
     }
 
-    private function sameName(?string $a, ?string $b): bool
+    /** Bandingkan dua teks setelah dinormalisasi (huruf kecil + spasi rapat) — dipakai untuk nama & catatan. */
+    private function sameText(?string $a, ?string $b): bool
     {
-        return $this->normName($a) === $this->normName($b);
+        return $this->normText($a) === $this->normText($b);
     }
 
-    private function normName(?string $value): string
+    private function normText(?string $value): string
     {
         $value = mb_strtolower(trim((string) $value));
         $value = preg_replace('/\s+/u', ' ', $value);
         return (string) $value;
-    }
-
-    private function sameText(?string $a, ?string $b): bool
-    {
-        return $this->normName($a) === $this->normName($b);
     }
 }

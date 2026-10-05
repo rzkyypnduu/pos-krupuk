@@ -15,11 +15,13 @@ class ProdukController extends Controller
     {
         $request->validate(['prodName' => 'required|string|max:255'], ['prodName.required' => 'Isi nama produk dulu.']);
         Product::create(['name' => $request->input('prodName'), 'price' => (int) ($request->input('prodPrice') ?? 0)]);
-        return redirect()->route('pos', $this->makeQueryParams($request, ['tab' => 'produk']))->with('success', 'Produk ditambahkan.');
+        return $this->redirectToPos($request, ['tab' => 'produk'], 'Produk ditambahkan.');
     }
 
     public function ubahHarga(Request $request, int $id)
     {
+        // Kosong = 0 (harga direset); nilai bukan angka tetap ditolak.
+        $request->validate(['price' => 'nullable|integer|min:0'], ['price.integer' => 'Harga harus angka.']);
         Product::where('id', $id)->update(['price' => (int) ($request->input('price') ?? 0)]);
         return back()->with('success', 'Harga diubah.');
     }
@@ -27,7 +29,7 @@ class ProdukController extends Controller
     public function hapusProduk(Request $request, int $id)
     {
         Product::where('id', $id)->delete();
-        return redirect()->route('pos', $this->makeQueryParams($request, ['tab' => 'produk']))->with('success', 'Produk dihapus.');
+        return $this->redirectToPos($request, ['tab' => 'produk'], 'Produk dihapus.');
     }
 
     public function seedProduk(Request $request)
@@ -39,6 +41,6 @@ class ProdukController extends Controller
                 Product::create(['name' => $name, 'price' => 0]);
             }
         }
-        return redirect()->route('pos', $this->makeQueryParams($request, ['tab' => 'produk']))->with('success', 'Contoh produk ditambahkan.');
+        return $this->redirectToPos($request, ['tab' => 'produk'], 'Contoh produk ditambahkan.');
     }
 }

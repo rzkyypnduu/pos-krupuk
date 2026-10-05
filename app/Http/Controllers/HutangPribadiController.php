@@ -22,7 +22,7 @@ class HutangPribadiController extends Controller
             'name' => $request->input('hprName'),
             'amount' => $request->input('hprAmount'),
         ]);
-        return redirect()->route('pos', $this->makeQueryParams($request, ['tab' => 'hasil']))->with('success', 'Hutang pribadi dicatat.');
+        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Hutang pribadi dicatat.');
     }
 
     public function hapusPersonalLedger(Request $request, int $id)
@@ -42,7 +42,7 @@ class HutangPribadiController extends Controller
         if ($name !== '') {
             $row->name = $name;
         }
-        $amount = static::parseQty($request->input('amount'));
+        $amount = static::parseDecimal($request->input('amount'));
         $row->amount = $amount !== null ? max(0, (int) round($amount)) : 0;
         $row->save();
         return response()->json(['ok' => true, 'name' => $row->name, 'amount' => $row->amount]);

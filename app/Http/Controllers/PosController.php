@@ -61,7 +61,7 @@ class PosController extends Controller
             $qty = is_array($oldQty) && array_key_exists($product->id, $oldQty)
                 ? $oldQty[$product->id]
                 : $request->query('qty_' . $product->id, null);
-            $txQty[$product->id] = self::parseQty($qty);
+            $txQty[$product->id] = static::parseDecimal($qty);
         }
         $txPaid = old('tx_paid', $request->query('tx_paid', null));
         $txPaidTouched = old('tx_paid_touched', $request->query('tx_paid_touched', 0));
@@ -264,7 +264,7 @@ class PosController extends Controller
         StockRemaining::whereBetween('date', [$start, $end])->delete();
         PersonalLedger::whereBetween('date', [$start, $end])->delete();
         SaldoDeduction::whereBetween('date', [$start, $end])->delete();
-        return redirect()->route('pos', $this->makeQueryParams($request, ['tab' => 'ringkasan']))->with('success', 'Data bulan ini dihapus.');
+        return $this->redirectToPos($request, ['tab' => 'ringkasan'], 'Data bulan ini dihapus.');
     }
 
     public function resetAll(Request $request)

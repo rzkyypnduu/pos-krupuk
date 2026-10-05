@@ -13,6 +13,14 @@ class SaldoController extends Controller
 
     public function simpanSaldo(Request $request)
     {
+        // Kosong = 0 (angka direset); nilai bukan angka tetap ditolak.
+        $request->validate([
+            'saldoA' => 'nullable|integer',
+            'saldoB' => 'nullable|integer',
+        ], [
+            'saldoA.integer' => 'Angka A harus bilangan bulat.',
+            'saldoB.integer' => 'Angka B harus bilangan bulat.',
+        ]);
         // Satu nilai pengurangan saldo per tanggal — simpan menimpa nilai lama.
         $date = $this->activeDate($request);
         SaldoDeduction::where('date', $date)->delete();
@@ -21,7 +29,7 @@ class SaldoController extends Controller
             'a' => (int) ($request->input('saldoA') ?? 0),
             'b' => (int) ($request->input('saldoB') ?? 0),
         ]);
-        return redirect()->route('pos', $this->makeQueryParams($request, ['tab' => 'hasil']))->with('success', 'Hasil pengurangan saldo disimpan.');
+        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Hasil pengurangan saldo disimpan.');
     }
 
     public function hapusSaldo(Request $request)

@@ -14,6 +14,19 @@ class CustomerLedger extends Model
     ];
 
     /**
+     * Entri milik sebuah lembar hasil: tanggal itu + entri legacy tanpa lembar;
+     * lewat null = semua entri (tanpa filter). Satu-satunya rumus filter sheet_date.
+     */
+    public function scopeForSheet($query, ?string $sheetDate)
+    {
+        if ($sheetDate === null) {
+            return $query;
+        }
+
+        return $query->where(fn ($q) => $q->where('sheet_date', $sheetDate)->orWhereNull('sheet_date'));
+    }
+
+    /**
      * Saldo hutang per pelanggan (dikelompokkan berdasarkan nama).
      * Nilai positif = pelanggan punya hutang, negatif = kelebihan bayar.
      *
@@ -26,9 +39,7 @@ class CustomerLedger extends Model
     {
         $balances = [];
 
-        $entries = $sheetDate === null
-            ? self::all()
-            : self::where(fn ($q) => $q->where('sheet_date', $sheetDate)->orWhereNull('sheet_date'))->get();
+        $entries = static::forSheet($sheetDate)->get();
 
         foreach ($entries as $entry) {
             $balances[$entry->name] = ($balances[$entry->name] ?? 0)

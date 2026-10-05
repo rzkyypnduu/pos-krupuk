@@ -370,8 +370,8 @@
     <form method="POST" action="{{ route('pos.simpanSaldo', $qParams) }}">
         @csrf
         <div class="field-row">
-            <div class="field"><label for="saldoA">Angka A</label><input type="number" id="saldoA" name="saldoA" step="1" value="{{ old('saldoA', $saldoTerakhir?->a) }}"></div>
-            <div class="field"><label for="saldoB">Angka B</label><input type="number" id="saldoB" name="saldoB" step="1" value="{{ old('saldoB', $saldoTerakhir?->b) }}"></div>
+        <div class="field"><label for="saldoA">Angka A</label><input type="number" id="saldoA" name="saldoA" step="1" value="{{ old('saldoA', $saldoTerakhir?->a) }}">@error('saldoA') <div class="field-error">{{ $message }}</div> @enderror</div>
+        <div class="field"><label for="saldoB">Angka B</label><input type="number" id="saldoB" name="saldoB" step="1" value="{{ old('saldoB', $saldoTerakhir?->b) }}">@error('saldoB') <div class="field-error">{{ $message }}</div> @enderror</div>
             <div class="field" style="flex:0; align-self:flex-end;"><button type="submit" class="primary">Simpan</button></div>
         </div>
     </form>

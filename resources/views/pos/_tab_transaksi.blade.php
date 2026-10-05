@@ -8,8 +8,8 @@
         }
     }
     $rawTotal = (int) round($rawTotal);
-    $roundedTotal = \App\Http\Controllers\PosController::roundTotal($rawTotal);
-    $paidParsed = $txPaidTouched && !is_null($txPaid) && $txPaid !== '' ? (int) str_replace(',', '.', str_replace('.', '', $txPaid)) : 0;
+    $roundedTotal = \App\Http\Controllers\PosController::roundTotal($rawTotal); // = JS recalcTotals() di bawah (lihat komentar di situ)
+    $paidParsed = $txPaidTouched ? parseRupiah($txPaid) : 0; // parser sama dengan TransaksiController::simpanTransaksi
     $diff = $roundedTotal - $paidParsed;
     $bal = $customerBalances[$txName] ?? 0;
 
@@ -347,6 +347,7 @@
 <script>
 function updateStatus() {
     var paid = document.getElementById('txPaid').value;
+    // parse = parseRupiah() di PHP; parseInt di sini membuang desimal (input rupiah tanpa desimal)
     var paidNum = paid ? parseInt(String(paid).replace(/\./g,'').replace(',','.')) : 0;
     var rounded = {{ $roundedTotal }};
     var diff = rounded - paidNum;
@@ -366,6 +367,7 @@ function recalcTotals() {
         if (v > 0) { totalKg += v; rawTotal += v * (prices[pid] || 0); }
     });
     rawTotal = Math.round(rawTotal);
+    // aturan pembulatan yang sama dengan PosHelpers::roundTotal (PHP) — ubah dua tempat
     var thousands = Math.floor(rawTotal / 1000) * 1000;
     var remainder = rawTotal - thousands;
     var rounded = remainder < 500 ? thousands : thousands + 1000;

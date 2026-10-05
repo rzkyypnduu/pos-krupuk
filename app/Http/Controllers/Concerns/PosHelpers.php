@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  * Logika bersama seluruh controller POS:
  * - tanggal aktif & parameter URL (semua tab memakai satu tanggal tunggal),
  * - lembar hasil (salin-tempel sekali per tanggal, lalu independen),
- * - pembulatan total & parsing qty (koma desimal).
+ * - pembulatan total, parsing angka desimal (koma), dan redirect balik ke POS.
  */
 trait PosHelpers
 {
@@ -55,6 +55,17 @@ trait PosHelpers
         return array_filter($params, fn ($v) => $v !== null && $v !== '');
     }
 
+    /**
+     * Redirect kembali ke POS dengan parameter (tab, tx_date, dst.) digabung
+     * ke query string aktif; $pesan = flash sukses sekali tampil.
+     */
+    protected function redirectToPos(Request $request, array $params = [], ?string $pesan = null)
+    {
+        $redirect = redirect()->route('pos', $this->makeQueryParams($request, $params));
+
+        return $pesan !== null ? $redirect->with('success', $pesan) : $redirect;
+    }
+
     /** Tanggal aktif dari query/input tx_date; default hari ini. */
     private function activeDate(Request $request): string
     {
@@ -69,7 +80,7 @@ trait PosHelpers
     /** Entri hutang pelanggan milik lembar hasil tanggal aktif (entri legacy tanpa lembar ikut tampil). */
     private function scopedCustomerLedgers(string $sheetDate)
     {
-        return CustomerLedger::where(fn ($q) => $q->where('sheet_date', $sheetDate)->orWhereNull('sheet_date'));
+        return CustomerLedger::forSheet($sheetDate);
     }
 
     /**
@@ -166,6 +177,11 @@ trait PosHelpers
         }
     }
 
+    /**
+     * Pembulatan total ke ribuan terdekat: sisa < 500 -> ke bawah, >= 500 -> ke atas
+     * (499 -> 0, 500 -> 1000). Aturan yang sama ditulis ulang di JS recalcTotals()
+     * (_tab_transaksi) — bila aturnya berubah, ubah dua tempat itu.
+     */
     public static function roundTotal(int $total): int
     {
         $thousands = intdiv($total, 1000) * 1000;
@@ -174,10 +190,11 @@ trait PosHelpers
     }
 
     /**
-     * Qty desimal dari form: UI memakai koma desimal ("1,5") — (float) "1,5" di PHP = 1,
+     * Angka desimal dari input user: UI memakai koma desimal ("1,5") — (float) "1,5" di PHP = 1,
      * jadi normalisasi dulu ke titik supaya setengah kg ikut tercatat & dihitung.
+     * Dipakai untuk qty (kg) maupun nominal uang (edit hutang pribadi).
      */
-    public static function parseQty(mixed $value): ?float
+    public static function parseDecimal(mixed $value): ?float
     {
         if ($value === null || $value === '') {
             return null;
