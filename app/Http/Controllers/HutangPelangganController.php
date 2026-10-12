@@ -16,12 +16,15 @@ class HutangPelangganController extends Controller
 {
     use PosHelpers;
 
-    public function __construct(private HutangService $hutang)
-    {
-    }
+    public function __construct(private HutangService $hutang) {}
 
     public function simpanHutangPelanggan(Request $request)
     {
+        // "15.000" dinormalisasi ke 15000; nilai bukan angka tetap ditolak validasi.
+        $amt = $request->input('debtModalAmount');
+        if (is_string($amt) && preg_match('/^[\d.\s]+$/', trim($amt))) {
+            $request->merge(['debtModalAmount' => parseRupiah($amt)]);
+        }
         $request->validate([
             'debtModalName' => 'required|string|max:255',
             'debtModalAmount' => 'required|integer|min:1',
@@ -37,13 +40,14 @@ class HutangPelangganController extends Controller
             'type' => 'tambah',
             'note' => $request->input('debtModalNote') ?: 'Tambah hutang manual',
         ]);
+
         return $this->redirectToPos($request, ['tab' => 'hasil'], 'Hutang ditambahkan.');
     }
 
     public function hapusLedgerEntry(Request $request, int $id)
     {
         $entry = CustomerLedger::find($id);
-        if (!$entry) {
+        if (! $entry) {
             return $request->expectsJson()
                 ? response()->json(['ok' => false, 'message' => 'Entri tidak ditemukan.'], 404)
                 : back();
@@ -52,8 +56,10 @@ class HutangPelangganController extends Controller
         $entry->delete();
         if ($request->expectsJson()) {
             $proc = $this->hutang->processCustomerDebts($name, $this->activeDate($request));
+
             return $this->debtJson($proc);
         }
+
         return back()->with('success', 'Entri dihapus.');
     }
 
@@ -66,10 +72,11 @@ class HutangPelangganController extends Controller
         }
         if ($old !== $new) {
             if (CustomerLedger::where('name', $new)->exists()) {
-                return response()->json(['ok' => false, 'message' => 'Nama "' . $new . '" sudah dipakai pelanggan lain.'], 422);
+                return response()->json(['ok' => false, 'message' => 'Nama "'.$new.'" sudah dipakai pelanggan lain.'], 422);
             }
             CustomerLedger::where('name', $old)->update(['name' => $new]);
         }
+
         return response()->json(['ok' => true, 'name' => $new]);
     }
 
@@ -77,17 +84,18 @@ class HutangPelangganController extends Controller
     {
         $this->scopedCustomerLedgers($this->activeDate($request))
             ->where('name', $name)->delete();
+
         return back()->with('success', 'Riwayat hutang dihapus.');
     }
 
     public function adjustDebtCell(Request $request)
     {
         $debtId = $request->input('debt_id');
-        $newRemaining = max(0, (int) $request->input('new_remaining'));
+        $newRemaining = max(0, parseRupiah($request->input('new_remaining'))); // aman terima "15.000"
         $sheetDate = $this->activeDate($request);
 
         $entry = CustomerLedger::find($debtId);
-        if (!$entry) {
+        if (! $entry) {
             return $request->expectsJson()
                 ? response()->json(['ok' => false, 'message' => 'Entri tidak ditemukan.'], 404)
                 : back();
@@ -106,11 +114,17 @@ class HutangPelangganController extends Controller
         if ($request->expectsJson()) {
             return $this->debtJson($proc);
         }
+
         return back()->with('success', 'Hutang disesuaikan.');
     }
 
     public function adjustTotalDebt(Request $request)
     {
+        // "15.000" dinormalisasi ke 15000; nilai bukan angka tetap ditolak validasi.
+        $total = $request->input('new_total');
+        if (is_string($total) && preg_match('/^[\d.\s]+$/', trim($total))) {
+            $request->merge(['new_total' => parseRupiah($total)]);
+        }
         $request->validate([
             'name' => 'required|string',
             'new_total' => 'required|integer|min:0',
@@ -134,10 +148,11 @@ class HutangPelangganController extends Controller
         if ($request->expectsJson()) {
             return $this->debtJson($proc);
         }
+
         return back()->with('success', 'Total hutang disesuaikan.');
     }
 
-    /** Respons JSON standar edit hutang: daftar entri aktif + total sisa (dipakai Alpine). */
+    /** Respons JSON standar edit hutang: daftar entri aktif + total sisa (dipakai JS klien). */
     private function debtJson(array $proc)
     {
         return response()->json([

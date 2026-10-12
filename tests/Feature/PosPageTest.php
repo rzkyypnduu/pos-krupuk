@@ -16,7 +16,7 @@ class PosPageTest extends TestCase
         $response = $this->get('/pos');
 
         $response->assertStatus(200);
-        $response->assertSee('POS Krupuk');
+        $response->assertSee('UD Krupuk Lancar');
     }
 
     public function test_transaction_form_is_hidden_by_default(): void
@@ -110,9 +110,9 @@ class PosPageTest extends TestCase
     public function test_decimal_qty_with_comma_is_saved_not_truncated(): void
     {
         // form qty & speech mengirim koma desimal ("1,5"); (float) "1,5" di PHP = 1
-        $p1 = Product::firstOrCreate(['name' => 'Kuning DesimalA_' . uniqid()], ['price' => 10000]);
-        $p2 = Product::firstOrCreate(['name' => 'Kuning DesimalB_' . uniqid()], ['price' => 20000]);
-        $customer = 'Tester Desimal_' . uniqid();
+        $p1 = Product::firstOrCreate(['name' => 'Kuning DesimalA_'.uniqid()], ['price' => 10000]);
+        $p2 = Product::firstOrCreate(['name' => 'Kuning DesimalB_'.uniqid()], ['price' => 20000]);
+        $customer = 'Tester Desimal_'.uniqid();
 
         $this->post('/pos/transaksi?tab=transaksi&tx_date=2026-09-30', [
             'txName' => $customer,
@@ -178,11 +178,13 @@ class PosPageTest extends TestCase
         );
     }
 
-    public function test_speech_script_is_cache_busted(): void
+    public function test_speech_script_is_loaded_via_vite_bundle(): void
     {
         $html = $this->get('/pos?new=1')->getContent();
 
-        $this->assertMatchesRegularExpression('/js\/pos-speech\.js\?v=\d+/', $html);
+        // pos-speech.js kini masuk bundle Vite (type="module"), bukan file statis.
+        // Cocok untuk mode dev (hot: .../resources/js/app.js) maupun build (/build/assets/app-*.js).
+        $this->assertMatchesRegularExpression('/<script[^>]+type="module"[^>]+src="[^"]*app[^"]*\.js"/', $html);
     }
 
     public function test_recap_money_values_are_rows_not_cards(): void
@@ -206,10 +208,11 @@ class PosPageTest extends TestCase
             '/data-product-id="\d+"[^>]*oninput="[^"]*recalcTotals\(\)/',
             $html
         );
-        // tombol + / - harus mengirim event input (bukan change) supaya Total kg ikut terhitung
+        // tombol + / - dikirim sebagai data-qty-step (delegasi pos-ui.js dispatch event input)
         $inputs = substr_count($html, 'data-product-id="');
         $this->assertGreaterThan(0, $inputs);
-        $this->assertSame($inputs * 2, substr_count($html, "dispatchEvent(new Event('input', {bubbles:true}))"));
+        $this->assertSame($inputs * 2, substr_count($html, 'data-qty-step="'));
+        $this->assertSame($inputs * 2, substr_count($html, 'data-delta="'));
         $this->assertStringNotContainsString("dispatchEvent(new Event('change'))", $html);
     }
 }

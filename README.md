@@ -1,59 +1,87 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# POS Krupuk
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi point-of-sale harian untuk usaha krupuk: transaksi kasir (input suara/manual),
+master produk, lembar hasil harian (stok minyak & barang, sisa barang, rekap hutang
+pelanggan LIFO, hutang pribadi, pengurangan saldo), ringkasan bulanan + grafik penjualan.
 
-## About Laravel
+Dibangun dengan **Laravel 12** + **Bootstrap 5** (via Sass) + **Vite** — tanpa Alpine,
+tanpa CDN, seluruh aset dibundel lokal.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Kebutuhan
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP >= 8.2 (ekstensi `pdo_mysql`)
+- Composer
+- Node.js >= 18 + npm
+- MySQL 8 (atau MariaDB 10.4+)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Instalasi cepat
 
-## Learning Laravel
+```bash
+composer setup
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Menjalankan: `composer install` → salin `.env` → `php artisan key:generate` →
+`php artisan migrate` → `npm install` → `npm run build`.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Salin `.env.example` ke `.env` lalu sesuaikan kredensial database sebelum
+`composer setup` (atau jalankan langkah demi langkah).
 
-## Laravel Sponsors
+## Perintah sehari-hari
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+| Perintah | Fungsi |
+| --- | --- |
+| `composer dev` | Jalankan bersamaan: server, queue, log (pail), Vite |
+| `composer test` | Clear config + jalankan seluruh test PHPUnit |
+| `npm run build` | Build aset produksi (`public/build`) |
+| `npm run dev` | Vite dev server (HMR) |
+| `vendor/bin/pint` | Rapikan gaya kode PHP (PSR-12) |
 
-### Premium Partners
+Buka `http://127.0.0.1:8000` (atau vhost Laragon) — `/` mengarah ke tab Transaksi.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Struktur
 
-## Contributing
+```
+app/
+  Http/Controllers/        → endpoint POS (per tab/fitur)
+    Concerns/PosHelpers.php → helper tanggal, parameter URL, rounding
+  Models/                  → 13 model Eloquent
+  Services/
+    HasilSheetService.php  → lembar hasil: salin-tempel sekali per tanggal
+    HutangService.php      → perhitungan sisa hutang pelanggan (LIFO)
+    SpeechParser.php       → parser rule-based untuk speech-to-text
+  Support/helpers.php      → rupiah(), parseRupiah(), fmtKg()
+bootstrap/                 → app & routing (Laravel 11+ style)
+config/                    → konfigurasi framework
+database/migrations/       → skema: sales, expenses, products, ledgers, dll
+resources/
+  css/app.scss             → variabel tema + import Bootstrap + pos.scss
+  css/pos.scss             → seluruh gaya khas POS (#pos-root scope)
+  js/                      → entry Vite + modul POS (pos-ui/pay/scroll/speech, chart-init)
+  views/pos/               → index + 4 partial tab + 2 modal
+routes/web.php             → route dikelompokkan prefix pos.*
+tests/Feature|Unit         → test fitur & unit
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Speech-to-text
 
-## Code of Conduct
+Tekan mikrofon di form Transaksi Baru lalu ucapkan, mis. *"Budi dua kilo kuning"*.
+Butuh Chrome/Edge + izin mikrofon + internet (transkripsi Google). Parser berjalan
+di server (`app/Services/SpeechParser.php`, tanpa API key). Selengkapnya di
+[CARA_SETUP.md](CARA_SETUP.md).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Dokumentasi lengkap
 
-## Security Vulnerabilities
+Panduan operasional, penjelasan tiap tab, dan catatan teknis ada di
+**[CARA_SETUP.md](CARA_SETUP.md)**.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Test
 
-## License
+```bash
+composer test
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Butuh database testing `pos_krupuk_testing` (diatur di `phpunit.xml`).
+
+## Lisensi
+
+MIT

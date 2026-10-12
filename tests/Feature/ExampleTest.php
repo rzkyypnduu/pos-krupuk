@@ -8,12 +8,12 @@ use Tests\TestCase;
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * Halaman utama di-redirect ke POS.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_root_redirects_to_pos(): void
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertRedirect(route('pos'));
     }
 }

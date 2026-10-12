@@ -21,7 +21,7 @@ class StokHasilController extends Controller
 
     public function simpanOil(Request $request)
     {
-        if (!$request->input('oilQty')) {
+        if (! $request->input('oilQty')) {
             return back()->withErrors(['oilQty' => 'Isi jumlah dulu.'])->withInput();
         }
         // Satu nilai stok minyak per tanggal — simpan menimpa nilai lama.
@@ -30,14 +30,16 @@ class StokHasilController extends Controller
         OilStock::create([
             'date' => $date,
             'qty' => $request->input('oilQty'),
-            'price' => (int) ($request->input('oilPrice') ?? 0),
+            'price' => parseRupiah($request->input('oilPrice')), // aman terima "15.000"
         ]);
+
         return $this->redirectToPos($request, ['tab' => 'hasil'], 'Stok minyak disimpan.');
     }
 
     public function hapusOil(Request $request)
     {
         OilStock::where('date', $this->activeDate($request))->delete();
+
         return back()->with('success', 'Stok minyak dihapus.');
     }
 
@@ -47,11 +49,11 @@ class StokHasilController extends Controller
     {
         $stockMgmtNameInput = $request->input('stockMgmtName', '');
         $name = is_string($stockMgmtNameInput) ? trim($stockMgmtNameInput) : '';
-        if (!$name) {
+        if (! $name) {
             return back()->withErrors(['stockMgmtName' => 'Isi nama dulu.'])->withInput();
         }
         $sacks = json_decode($request->input('stockMgmtSacks') ?: '[]', true);
-        if (!is_array($sacks)) {
+        if (! is_array($sacks)) {
             $sacks = [];
         }
         $sacks = array_values(array_filter($sacks, fn ($v) => is_numeric($v) && (float) $v > 0));
@@ -60,7 +62,7 @@ class StokHasilController extends Controller
         }
         $qty = array_sum($sacks);
         $date = $this->activeDate($request);
-        $price = (int) ($request->input('stockMgmtPrice') ?? 0);
+        $price = parseRupiah($request->input('stockMgmtPrice')); // aman terima "15.000"
         $batch = ['id' => uniqid(), 'date' => $date, 'price' => $price, 'sacks' => $sacks];
 
         $existing = StockManagement::whereRaw('LOWER(name) = ?', [strtolower($name)])->first();
@@ -74,12 +76,14 @@ class StokHasilController extends Controller
                 'batches' => [$batch],
             ]);
         }
+
         return $this->redirectToPos($request, ['tab' => 'hasil'], 'Stok barang ditambahkan.');
     }
 
     public function hapusStockMgmt(Request $request, int $id)
     {
         StockManagement::where('id', $id)->delete();
+
         return back()->with('success', 'Data stok dihapus.');
     }
 
@@ -87,7 +91,7 @@ class StokHasilController extends Controller
     public function updateStockMgmtSacks(Request $request, int $id)
     {
         $row = StockManagement::find($id);
-        if (!$row) {
+        if (! $row) {
             return response()->json(['ok' => false, 'message' => 'Data tidak ditemukan.'], 404);
         }
         $input = $request->input('sacks');
@@ -109,6 +113,7 @@ class StokHasilController extends Controller
                 'sacks' => $sacks,
             ]],
         ]);
+
         return response()->json([
             'ok' => true,
             'sacks' => $row->batches[0]['sacks'] ?? [],
@@ -132,8 +137,9 @@ class StokHasilController extends Controller
             'date' => $this->activeDate($request),
             'name' => $name,
             'qty' => $request->input('remainQty'),
-            'price' => (int) ($request->input('remainPrice') ?? 0),
+            'price' => parseRupiah($request->input('remainPrice')), // aman terima "15.000"
         ]);
+
         return $this->redirectToPos($request, ['tab' => 'hasil'], 'Sisa barang ditambahkan.');
     }
 
@@ -141,7 +147,7 @@ class StokHasilController extends Controller
     public function updateRemain(Request $request, int $id)
     {
         $row = StockRemaining::find($id);
-        if (!$row) {
+        if (! $row) {
             return response()->json(['ok' => false, 'message' => 'Data tidak ditemukan.'], 404);
         }
         $name = trim((string) $request->input('name', ''));
@@ -149,8 +155,9 @@ class StokHasilController extends Controller
             $row->name = $name;
         }
         $row->qty = static::parseDecimal($request->input('qty')) ?? 0;
-        $row->price = max(0, (int) ($request->input('price') ?? 0));
+        $row->price = max(0, parseRupiah($request->input('price'))); // aman terima "15.000"
         $row->save();
+
         return response()->json([
             'ok' => true,
             'name' => $row->name,
@@ -163,6 +170,7 @@ class StokHasilController extends Controller
     public function hapusRemain(Request $request, int $id)
     {
         StockRemaining::where('id', $id)->delete();
+
         return back()->with('success', 'Sisa barang dihapus.');
     }
 }

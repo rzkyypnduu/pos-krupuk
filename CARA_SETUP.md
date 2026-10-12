@@ -161,15 +161,16 @@ urut dari atas ke bawah:
    - **Diterima** (oranye) = `SUM(paid) + SUM(paid_kemarin)` tiap hari
    - **Kas bersih** (hijau) = Diterima − Pengeluaran (`expenses`)
    Kedua garis memakai **area isian tipis**; sumbu vertikal dalam juta rupiah,
-   tooltip menampilkan rupiah persis + versi "jt". Chart.js **lokal**
-   (`public/js/chart.umd.min.js`, unduhan, tanpa CDN — tetap jalan offline).
+    tooltip menampilkan rupiah persis + versi "jt". Chart.js **lokal**
+    (dependency npm `chart.js`, dirender `resources/js/chart-init.js` via bundle
+    Vite — tanpa CDN, tetap jalan offline).
 3. **Produk terlaris** — peringkat 5 produk teratas bulan aktif berdasarkan total kg
    terjual (`sale_items` join `sales`), ditampilkan sebagai bar horizontal proporsional
    + jumlah nilai rupiahnya. Tombol urut tidak ada (peringkat sudah dari qty).
 4. **Pelanggan teraktif** — daftar pelanggan bulan aktif dengan **dua tombol urut**:
    **Total Dibayar** (default) dan **Jumlah Transaksi** — urutan dihitung di sisi
-   klien (Alpine.js getter `sorted`), jadi ganti urut tidak perlu reload. Data baris
-   dikirim sebagai JSON sekali lewat `x-data`.
+   klien (vanilla JS di dalam `_tab_ringkasan.blade.php`), jadi ganti urut tidak
+   perlu reload. Baris tabel di-render server-side.
 
 Data ketiga widget dihitung di `PosController::ringkasan()` (method `ringkasan()`
 dipanggil hanya saat `tab=ringkasan`, jadi tab lain tidak ikut beban query).
@@ -216,7 +217,7 @@ teks) lalu server memilih yang paling masuk akal, dan sinyal *Produk tidak terde
 agar operator segera mengoreksi. Uji coba dulu di ruang tenang sebelum uji di ruang bising.
 
 **Alur teknisnya:**
-`public/js/pos-speech.js` (Web Speech API, `continuous` + auto-restart, akumulasi N-best)
+`resources/js/pos-speech.js` (Web Speech API, `continuous` + auto-restart, akumulasi N-best)
 → `POST /pos/speech/parse` → `app/Services/SpeechParser.php` (normalisasi teks,
 kata angka → digit, pencocokan nama produk dengan Levenshtein ketat + pass longgar,
 penggabungan produk yang sama (timpa), ekstraksi jumlah + satuan) →
@@ -293,7 +294,8 @@ lihat `tests/Unit/SpeechParserTest.php` dan `tests/Feature/SpeechParseTest.php`.
   - `HutangPribadiController.php` — daftar hutang pribadi
   - `SaldoController.php` — pengurangan saldo
   - `Concerns/PosHelpers.php` — trait logika bersama (tanggal aktif, parameter URL,
-    lembar hasil salin-tempel per tanggal, pembulatan total, parsing qty koma desimal)
+    pembulatan total, parsing qty koma desimal, redirect balik ke POS)
+- `app/Services/HasilSheetService.php` — lembar hasil salin-tempel per tanggal
 - `app/Services/HutangService.php` — perhitungan sisa hutang pelanggan (LIFO) +
   riwayat detail; dipakai PosController & HutangPelangganController
 - `app/Services/SpeechParser.php` — parser rule-based untuk speech-to-text
@@ -301,14 +303,18 @@ lihat `tests/Unit/SpeechParserTest.php` dan `tests/Feature/SpeechParseTest.php`.
   plus `2026_09_30_000001_create_input_logs_table.php` dan
   `2026_10_01_000001_add_paid_kemarin_to_sales_table.php` (kolom `sales.paid_kemarin`)
 - `resources/views/pos/` — index.blade.php (halaman lengkap: head + konten) +
-  _style.blade.php (seluruh CSS tema krupuk) + 4 tab (_tab_transaksi, _tab_produk,
-  _tab_hasil, _tab_ringkasan) + 2 modal (_modal_hutang, _modal_bayar)
-- `public/js/pos-speech.js` — mikrofon, Web Speech API, terapkan hasil ke form
-- `public/js/pos-pay.js` — store Alpine modal Bayar (default 0, tanpa prefill/preview LIFO)
+  4 tab (_tab_transaksi, _tab_produk, _tab_hasil, _tab_ringkasan) + 2 modal
+  (_modal_hutang, _modal_bayar)
+- `resources/css/pos.scss` — seluruh CSS tema krupuk (di-import terakhir di app.scss)
+- `resources/js/` — bundle Vite: app.js (entry: bootstrap + import modul POS),
+  pos-speech.js (mikrofon, Web Speech API, terapkan hasil ke form),
+  pos-pay.js (state pembayaran modal Bayar; default 0, tanpa prefill/preview LIFO),
+  pos-ui.js (delegasi `data-confirm`, `data-qty-step`, toast),
+  pos-scroll.js (pulihkan posisi scroll per tab), chart-init.js (grafik Ringkasan)
 - `routes/web.php` — route `/pos` (GET + POST), `POST /pos/speech/parse`,
   `POST /pos/transaksi/{id}/bayar` (modal bayar) dan `POST /pos/transaksi/{id}/bayar-pas`
   (bayar lunas)
-- `app/helpers.php` — fungsi `rupiah()` untuk format Rp
+- `app/Support/helpers.php` — fungsi `rupiah()` untuk format Rp
 - `tests/Feature/PosPageTest.php`, `tests/Unit/SpeechParserTest.php`,
   `tests/Feature/SpeechParseTest.php`, `tests/Feature/PaymentModalTest.php`
   — test jalankan dengan `php artisan test`

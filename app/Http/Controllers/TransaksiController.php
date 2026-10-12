@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,7 +30,7 @@ class TransaksiController extends Controller
         ], ['txName.required' => 'Isi nama pelanggan dulu.']);
 
         $qtyInputs = $request->input('qty', []);
-        if (!is_array($qtyInputs)) {
+        if (! is_array($qtyInputs)) {
             $qtyInputs = [];
         }
         $items = [];
@@ -47,7 +48,7 @@ class TransaksiController extends Controller
         // ditolak SEBELUM transaksi — kalau tidak, user tetap dapat pesan "berhasil"
         // padahal tidak ada data tersimpan.
         $editingId = $request->input('editing_sale_id');
-        if ($editingId && !Sale::whereKey($editingId)->exists()) {
+        if ($editingId && ! Sale::whereKey($editingId)->exists()) {
             return back()->withErrors([
                 'editing_sale_id' => 'Transaksi yang diedit sudah tidak ditemukan (mungkin sudah dihapus). Muat ulang halaman lalu coba lagi.',
             ]);
@@ -78,7 +79,9 @@ class TransaksiController extends Controller
             $editingId = $request->input('editing_sale_id');
             if ($editingId) {
                 $sale = Sale::find($editingId);
-                if (!$sale) return;
+                if (! $sale) {
+                    return;
+                }
                 $paidKemarin = (int) $sale->paid_kemarin;
                 $sale->update([
                     'date' => $date, 'name' => $name, 'raw_total' => $rawTotal,
@@ -125,7 +128,7 @@ class TransaksiController extends Controller
     public function bayarPas(Request $request, int $saleId)
     {
         $sale = Sale::find($saleId);
-        if (!$sale) {
+        if (! $sale) {
             return back()->with('error', 'Transaksi tidak ditemukan.');
         }
         if ($sale->rounded_total <= 0) {
@@ -156,7 +159,7 @@ class TransaksiController extends Controller
     public function bayarModal(Request $request, int $saleId)
     {
         $sale = Sale::find($saleId);
-        if (!$sale) {
+        if (! $sale) {
             return back()->with('error', 'Transaksi tidak ditemukan.');
         }
 
@@ -188,7 +191,9 @@ class TransaksiController extends Controller
     public function loadForPayment(Request $request, int $saleId)
     {
         $sale = Sale::with('items')->find($saleId);
-        if (!$sale) return back();
+        if (! $sale) {
+            return back();
+        }
 
         $params = $this->makeQueryParams($request, [
             'tab' => 'transaksi',
@@ -203,7 +208,7 @@ class TransaksiController extends Controller
         ]);
 
         foreach ($sale->items as $item) {
-            $params['qty_' . $item->product_id] = (float) $item->qty;
+            $params['qty_'.$item->product_id] = (float) $item->qty;
         }
 
         return redirect()->route('pos', $params);
@@ -220,13 +225,13 @@ class TransaksiController extends Controller
     public function toggleKemarin(Request $request, int $saleId)
     {
         $sale = Sale::find($saleId);
-        if (!$sale) {
+        if (! $sale) {
             return response()->json(['ok' => false, 'error' => 'Transaksi tidak ditemukan.'], 404);
         }
 
         $active = (bool) $request->input('active');
 
-        if (!$active && $sale->paid_kemarin > 0) {
+        if (! $active && $sale->paid_kemarin > 0) {
             DB::transaction(function () use ($sale) {
                 $sale->paid += $sale->paid_kemarin;
                 $sale->paid_kemarin = 0;
@@ -248,12 +253,13 @@ class TransaksiController extends Controller
         Sale::where('id', $saleId)->delete();
         $params = $this->makeQueryParams($request, ['tab' => 'transaksi']);
         unset($params['editing']);
+
         return redirect()->route('pos', $params)->with('success', 'Transaksi dihapus.');
     }
 
     public function simpanExpense(Request $request)
     {
-        $amount = (int) ($request->input('expAmount') ?? 0);
+        $amount = parseRupiah($request->input('expAmount')); // aman terima "15.000" maupun "15000"
         if ($amount <= 0) {
             return back()->withErrors(['expAmount' => 'Isi jumlah uang yang diambil.'])->withInput();
         }
@@ -262,6 +268,7 @@ class TransaksiController extends Controller
             'amount' => $amount,
             'note' => $request->input('expNote') ?: null,
         ]);
+
         return $this->redirectToPos($request, [
             'tab' => 'transaksi', 'exp_date' => $request->input('expDate') ?: now()->toDateString(),
         ], 'Pengeluaran dicatat.');
@@ -270,6 +277,7 @@ class TransaksiController extends Controller
     public function hapusExpense(Request $request, int $id)
     {
         Expense::where('id', $id)->delete();
+
         return back()->with('success', 'Pengeluaran dihapus.');
     }
 
@@ -280,7 +288,7 @@ class TransaksiController extends Controller
     {
         $note = (string) ($note ?? '');
         $method = $request->input('input_method');
-        if (!$method) {
+        if (! $method) {
             return;
         }
 
@@ -308,7 +316,7 @@ class TransaksiController extends Controller
                     $normalized = $candidate['normalized'] ?? null;
                 }
             }
-            if (!$rawText) {
+            if (! $rawText) {
                 $rawText = $request->input('input_text');
             }
 
@@ -325,7 +333,7 @@ class TransaksiController extends Controller
                 'final_json' => $final,
                 'match_json' => $parsed ? $this->compareParsed($parsed, $final) : null,
                 'duration_ms' => is_numeric($duration) ? (int) $duration : null,
-                'started_at' => $startedAt ? \Illuminate\Support\Carbon::parse($startedAt) : null,
+                'started_at' => $startedAt ? Carbon::parse($startedAt) : null,
                 'sale_id' => $saleId ?: null,
                 'status' => 'ok',
             ]);
@@ -393,6 +401,7 @@ class TransaksiController extends Controller
     {
         $value = mb_strtolower(trim((string) $value));
         $value = preg_replace('/\s+/u', ' ', $value);
+
         return (string) $value;
     }
 }

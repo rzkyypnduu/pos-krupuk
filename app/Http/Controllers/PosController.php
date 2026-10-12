@@ -13,6 +13,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockManagement;
 use App\Models\StockRemaining;
+use App\Services\HasilSheetService;
 use App\Services\HutangService;
 use Illuminate\Http\Request;
 
@@ -25,9 +26,7 @@ class PosController extends Controller
 {
     use PosHelpers;
 
-    public function __construct(private HutangService $hutang)
-    {
-    }
+    public function __construct(private HutangService $hutang, private HasilSheetService $hasil) {}
 
     public function index(Request $request)
     {
@@ -49,7 +48,7 @@ class PosController extends Controller
         } elseif (preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $bulanParam)) {
             // URL lama ?bulan=… tanpa tanggal → buka tanggal 1 bulan itu (tetap konsisten)
             $activeMonth = $bulanParam;
-            $txDate = $activeMonth . '-01';
+            $txDate = $activeMonth.'-01';
         } else {
             $txDate = now()->toDateString();
             $activeMonth = substr($txDate, 0, 7);
@@ -60,7 +59,7 @@ class PosController extends Controller
         foreach ($products as $product) {
             $qty = is_array($oldQty) && array_key_exists($product->id, $oldQty)
                 ? $oldQty[$product->id]
-                : $request->query('qty_' . $product->id, null);
+                : $request->query('qty_'.$product->id, null);
             $txQty[$product->id] = static::parseDecimal($qty);
         }
         $txPaid = old('tx_paid', $request->query('tx_paid', null));
@@ -80,7 +79,7 @@ class PosController extends Controller
         // dilihat lalu kedua tanggal berjalan independen — edit satu tidak
         // mempengaruhi yang lain.
         if ($tab === 'hasil') {
-            $this->ensureHasilSheet($txDate);
+            $this->hasil->ensure($txDate);
         }
         session(['hasil_last_date' => $txDate]);
 
@@ -93,7 +92,6 @@ class PosController extends Controller
         $personalLedgers = PersonalLedger::where('date', $txDate)->orderBy('id')->get();
         $saldoLogs = SaldoDeduction::where('date', $txDate)->orderBy('id')->get();
 
-        $customerBalances = CustomerLedger::balances($txDate);
         $hpNames = $this->scopedCustomerLedgers($txDate)->select('name')->distinct()->orderBy('name')->pluck('name')
             ->filter(fn ($name) => $this->hutang->processCustomerDebts($name, $txDate)['totalSisa'] > 0)->values()->all();
         $allCustomerNames = Sale::pluck('name')->merge(CustomerLedger::pluck('name'))->unique()->sort()->values()->all();
@@ -105,7 +103,9 @@ class PosController extends Controller
         foreach ($hpNames as $name) {
             $p = $this->hutang->processCustomerDebts($name, $txDate);
             $hpProcessed[$name] = $p;
-            if (count($p['activeDebts']) > $maxCols) $maxCols = count($p['activeDebts']);
+            if (count($p['activeDebts']) > $maxCols) {
+                $maxCols = count($p['activeDebts']);
+            }
             $hpGrandTotal += $p['totalSisa'];
         }
 
@@ -165,7 +165,7 @@ class PosController extends Controller
             'remainName', 'remainQty', 'remainPrice',
             'products', 'sales', 'dayExpenses',
             'oilStocks', 'stockMgmts', 'stockRemainings',
-            'customerBalances', 'hpNames', 'hpProcessed', 'hpGrandTotal', 'maxCols', 'hpEntries',
+            'hpNames', 'hpProcessed', 'hpGrandTotal', 'maxCols', 'hpEntries',
             'personalLedgers', 'saldoLogs',
             'recapPerProduct', 'recapTotals', 'recapBulanPerProduct', 'recapBulanTotals',
             'allCustomerNames', 'stockMgmtHolderNames', 'ringkasanData',
@@ -253,7 +253,7 @@ class PosController extends Controller
     {
         // input() membaca body POST (hidden input "bulan") sekaligus query string lama.
         $bulan = (string) $request->input('bulan', '');
-        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $bulan)) {
+        if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $bulan)) {
             return back()->withErrors(['bulan' => 'Pilih bulan yang valid dulu.']);
         }
         [$start, $end] = $this->monthRange($bulan);
@@ -264,6 +264,7 @@ class PosController extends Controller
         StockRemaining::whereBetween('date', [$start, $end])->delete();
         PersonalLedger::whereBetween('date', [$start, $end])->delete();
         SaldoDeduction::whereBetween('date', [$start, $end])->delete();
+
         return $this->redirectToPos($request, ['tab' => 'ringkasan'], 'Data bulan ini dihapus.');
     }
 
@@ -279,6 +280,7 @@ class PosController extends Controller
         Product::query()->delete();
         SaldoDeduction::query()->delete();
         Expense::query()->delete();
+
         return redirect()->route('pos', ['tab' => 'transaksi'])->with('success', 'Semua data dihapus.');
     }
 }

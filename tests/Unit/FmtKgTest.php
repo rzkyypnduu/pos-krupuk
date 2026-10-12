@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Kunci perilaku fmtKg (app/helpers.php) — pasangan fmtKgJs di view.
+ * Kunci perilaku fmtKg (app/Support/helpers.php) — pasangan fmtKgJs di view.
  * Sebelum fix: fmtKg(1.04) menghasilkan "1," (rtrim memotong nol jadi koma
  * menggantung) dan desimal ke-2 dibuang ("2,25" jadi "2,3").
  */

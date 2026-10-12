@@ -17,7 +17,7 @@ if (! function_exists('parseRupiah')) {
      * Ambil nilai rupiah bulat dari input user: "1.500"/"1,500" -> 1500,
      * null/kosong -> 0. Dipakai kolom Dibayar (_tab_transaksi) dan modal Bayar
      * (TransaksiController::bayarModal); pasangan JS-nya updateStatus() di
-     * _tab_transaksi dan $store.pay.parse() di pos-pay.js (buang pemisah ribuan).
+     * _tab_transaksi dan parse() di resources/js/pos-pay.js (buang pemisah ribuan).
      */
     function parseRupiah(mixed $value): int
     {

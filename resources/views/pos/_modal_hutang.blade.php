@@ -1,37 +1,56 @@
 {{-- Modal tambah hutang pelanggan — tampil saat $debtModalOpen (dibuka dari tab Hasil);
-     POST → HutangPelangganController::simpanHutangPelanggan. --}}
+     POST → HutangPelangganController::simpanHutangPelanggan. Bootstrap 5 modal;
+     saat ditutup (Esc/backdrop), URL dibersihkan dari param debt_modal agar bisa dibuka lagi. --}}
 @if($debtModalOpen)
-    <div class="modal-backdrop open" id="debtModal" onclick="window.location.href='{{ route('pos', ['bulan' => $activeMonth, 'tx_date' => $txDate, 'tab' => 'hasil']) }}'">
-        <form class="debt-modal" method="POST" action="{{ route('pos.simpanHutangPelanggan', ['bulan' => $activeMonth, 'tx_date' => $txDate, 'tab' => 'hasil']) }}" onclick="event.stopPropagation()">
-            @csrf
-            <div class="debt-modal-head">
-                <h2>{{ $debtModalName ? 'Tambah hutang — ' . $debtModalName : 'Tambah hutang pelanggan' }}</h2>
-                <p>Catat hutang baru akan ditambahkan ke rekap.</p>
-            </div>
-            <div class="debt-modal-body">
-                <div class="field">
-                    <label for="debtModalName">Nama pelanggan</label>
-                    <input id="debtModalName" type="text" name="debtModalName" value="{{ $debtModalName }}" required placeholder="Contoh: Mut">
-                    @error('debtModalName') <div class="field-error">{{ $message }}</div> @enderror
+    @php
+        $debtCloseUrl = route('pos', ['bulan' => $activeMonth, 'tx_date' => $txDate, 'tab' => 'hasil']);
+    @endphp
+    <div class="modal fade" id="debtModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-debt-close-url="{{ $debtCloseUrl }}">
+        <div class="modal-dialog modal-dialog-centered">
+            <form class="modal-content" method="POST" action="{{ route('pos.simpanHutangPelanggan', ['bulan' => $activeMonth, 'tx_date' => $txDate, 'tab' => 'hasil']) }}">
+                @csrf
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">{{ $debtModalName ? 'Tambah hutang — ' . $debtModalName : 'Tambah hutang pelanggan' }}</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
-                <div class="field">
-                    <label for="debtModalAmount">Jumlah hutang (Rp)</label>
-                    <input id="debtModalAmount" type="number" name="debtModalAmount" min="0" step="500" required placeholder="0">
-                    @error('debtModalAmount') <div class="field-error">{{ $message }}</div> @enderror
+                <div class="modal-body">
+                    <div class="field">
+                        <label for="debtModalName">Nama pelanggan</label>
+                        <input id="debtModalName" type="text" name="debtModalName" value="{{ $debtModalName }}" required placeholder="Contoh: Mut">
+                        @error('debtModalName') <div class="field-error">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="field">
+                        <label for="debtModalAmount">Jumlah hutang (Rp)</label>
+                        <input id="debtModalAmount" type="text" inputmode="numeric" name="debtModalAmount" data-money min="0" required placeholder="0">
+                        @error('debtModalAmount') <div class="field-error">{{ $message }}</div> @enderror
+                    </div>
+                    <div class="field">
+                        <label for="debtModalDate">Tanggal</label>
+                        <input id="debtModalDate" type="date" name="debtModalDate" value="{{ now()->toDateString() }}" required>
+                    </div>
+                    <div class="field">
+                        <label for="debtModalNote">Catatan (opsional)</label>
+                        <input id="debtModalNote" type="text" name="debtModalNote" placeholder="Contoh: Hutang belanja">
+                    </div>
                 </div>
-                <div class="field">
-                    <label for="debtModalDate">Tanggal</label>
-                    <input id="debtModalDate" type="date" name="debtModalDate" value="{{ now()->toDateString() }}" required>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan hutang</button>
                 </div>
-                <div class="field">
-                    <label for="debtModalNote">Catatan (opsional)</label>
-                    <input id="debtModalNote" type="text" name="debtModalNote" placeholder="Contoh: Hutang belanja">
-                </div>
-                <div class="modal-actions">
-                    <a href="{{ route('pos', ['bulan' => $activeMonth, 'tx_date' => $txDate, 'tab' => 'hasil']) }}" class="ghost" style="text-decoration:none;">Batal</a>
-                    <button type="submit" class="primary">Simpan hutang</button>
-                </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById('debtModal');
+        if (!el || !window.bootstrap) return;
+        var modal = new bootstrap.Modal(el);
+        el.addEventListener('hidden.bs.modal', function () {
+            window.history.replaceState({}, '', el.getAttribute('data-debt-close-url'));
+        });
+        modal.show();
+        var first = el.querySelector('input[name="debtModalName"], input[name="debtModalAmount"]');
+        if (first) el.addEventListener('shown.bs.modal', function () { first.focus(); }, { once: true });
+    });
+    </script>
 @endif

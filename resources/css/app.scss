@@ -1,0 +1,43 @@
+// Tema POS UD Krupuk Lancar — override variabel Bootstrap sebelum import (sifat !default).
+// Palet diekstrak dari logo brand: merah crimson #C1272D, emas #F5A623; chrome putih & netral dingin.
+// Lapisan gaya khas POS (nav, kartu, tabel, grid hutang, modal) ada di pos.scss,
+// di-import SETELAH bootstrap agar menang.
+
+// Brand (logo UD Krupuk Lancar)
+$crimson: #C1272D;          // merah utama brand — primer, highlight, status hutang
+$crimson-dark: #9E1B20;     // hover/tekan
+$crimson-deep: #7F1416;     // maroon gelap — header form, aksen
+$gold: #F5A623;             // emas — aksen sekunder, gradien, bar
+$gold-dark: #D98F0B;
+
+$primary: $crimson;
+$secondary: #4B5563;        // netral dingin tegas
+$danger: #C1272D;           // status hutang = merah brand
+$success: #2E7D46;          // status lunas — hijau hangat
+$warning: $gold;
+$body-bg: #FFFFFF;          // putih murni — putih ya putih
+$body-color: #1F2937;       // near-black netral
+$link-color: $crimson-dark;
+$border-color: #E5E7EB;     // border netral tegas
+
+// Tipografi
+$font-family-sans-serif: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$headings-font-family: 'Fraunces', Georgia, serif;
+$font-size-base: 1rem;      // 16px — basis lebih rapat & profesional
+$line-height-base: 1.55;
+
+$border-radius: .625rem;    // 10px
+$border-radius-lg: .75rem;  // 12px
+$border-radius-sm: .375rem;
+
+$table-cell-padding-y: .65rem;
+$table-cell-padding-x: .85rem;
+$table-border-color: #E5E7EB;
+$table-head-bg: #F9FAFB;    // netral dingin
+
+$modal-content-border-color: #E5E7EB;
+$modal-content-border-radius: 1rem;
+$btn-focus-box-shadow: none;
+
+@import 'bootstrap/scss/bootstrap';
+@import 'pos';

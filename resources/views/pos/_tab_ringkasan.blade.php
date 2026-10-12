@@ -6,7 +6,7 @@
     @endphp
     {{-- Bagian 1: kartu tanggal & neraca (angka Saldo/Total = rumus sama dengan tab Hasil) --}}
     <div class="card">
-        <div style="margin-bottom:14px;"><h2 style="margin-bottom:4px;">Ringkasan neraca &amp; stok</h2><div class="hint" style="margin:0;">Ringkasan harian (stok, hutang, saldo) pindah ke tab Hasil. Neraca di bawah mengikuti tanggal aktif di bagian atas halaman.</div></div>
+        <div style="margin-bottom:14px;"><h2 style="margin-bottom:4px;">Ringkasan neraca &amp; stok</h2></div>
         <h3 style="margin-bottom:14px;">Tanggal: <span>{{ $ringkasanData['txDate'] }}</span></h3>
         <div class="stat-grid">
             <div class="stat-box"><div class="label">Total stok minyak</div><div class="value">{{ rupiah($ringkasanData['totalOil']) }}</div></div>
@@ -28,20 +28,18 @@
             <div class="label">Total</div>
             <div class="value">{{ rupiah($ringkasanData['grand'] - $ringkasanData['totalSaldo'] - $ringkasanData['totalHutangPri']) }}</div>
         </div>
-        <p class="note">Rumus mengikuti catatan: total aset = total stok minyak + total manajemen stok barang + total hutang pelanggan + total sisa barang; Saldo = total aset &minus; hutang pribadi; Total = total aset &minus; pengurangan saldo &minus; hutang pribadi (sama dengan Ringkasan Hari Ini di tab Hasil).</p>
     </div>
 
-    {{-- Bagian 2: grafik harian Chart.js lokal (public/js/chart.umd.min.js) --}}
+    {{-- Bagian 2: grafik harian — data grafik disuntik window.POS_GRAFIK,
+         dirender chart-init.js (Chart.js via bundle Vite). --}}
     <div class="card">
         <h2>Grafik penjualan harian</h2>
-        <div class="hint" style="margin:0 0 10px;">Periode: bulan {{ $monthLabel }}. <strong>Diterima</strong> = uang masuk (Dibayar + Bayar kemarin); <strong>Kas bersih</strong> = Diterima &minus; Pengeluaran. Sumbu vertikal dalam juta rupiah.</div>
         <div class="chart-wrap"><canvas id="chartHarian"></canvas></div>
     </div>
 
     {{-- Bagian 3: produk terlaris top-5 (ranking qty dari bulan berjalan) --}}
     <div class="card">
         <h2>Produk terlaris</h2>
-        <div class="hint" style="margin:0 0 10px;">Peringkat berdasarkan jumlah terjual (kg) bulan {{ $monthLabel }}.</div>
         @if($produkTerlaris->isEmpty())
             <p class="note">Belum ada penjualan bulan ini.</p>
         @else
@@ -63,13 +61,12 @@
         @endif
     </div>
 
-    {{-- Bagian 4: pelanggan teraktif — urutan di-sort di klien oleh Alpine (pelangganAktif) --}}
-    <div class="card" x-data="pelangganAktif({{ json_encode($pelangganAktif) }})">
+    {{-- Bagian 4: pelanggan teraktif — render server, urut ulang di klien (vanilla JS) --}}
+    <div class="card" id="pelangganAktifCard">
         <h2>Pelanggan teraktif</h2>
-        <div class="hint" style="margin:0 0 10px;">Transaksi bulan {{ $monthLabel }} — pilih cara urut:</div>
         <div class="filter-btns">
-            <button type="button" class="ghost" :class="sort === 'bayar' ? 'primary' : ''" @click="sort = 'bayar'">Urut: Total Dibayar</button>
-            <button type="button" class="ghost" :class="sort === 'trx' ? 'primary' : ''" @click="sort = 'trx'">Urut: Jumlah Transaksi</button>
+            <button type="button" class="btn btn-primary pelanggan-sort" data-sort="bayar">Urut: Total Dibayar</button>
+            <button type="button" class="btn btn-outline-secondary pelanggan-sort" data-sort="trx">Urut: Jumlah Transaksi</button>
         </div>
         <div class="table-wrap" style="margin-top:10px;">
             <table>
@@ -81,16 +78,17 @@
                         <th class="num">Jumlah Transaksi</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <template x-for="(c, i) in sorted" :key="c.name">
-                        <tr>
-                            <td x-text="i + 1"></td>
-                            <td><strong x-text="c.name"></strong></td>
-                            <td class="num" x-text="rupiahJs(c.bayar)"></td>
-                            <td class="num" x-text="c.trx"></td>
+                <tbody id="pelangganAktifBody">
+                    @forelse ($pelangganAktif as $c)
+                        <tr data-bayar="{{ $c['bayar'] }}" data-trx="{{ $c['trx'] }}">
+                            <td class="rank-i"></td>
+                            <td><strong>{{ $c['name'] }}</strong></td>
+                            <td class="num pelanggan-bayar"></td>
+                            <td class="num">{{ $c['trx'] }}</td>
                         </tr>
-                    </template>
-                    <tr x-show="rows.length === 0"><td colspan="4" class="empty">Belum ada transaksi bulan ini.</td></tr>
+                    @empty
+                        <tr class="pelanggan-empty"><td colspan="4" class="empty">Belum ada transaksi bulan ini.</td></tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -100,92 +98,61 @@
     <div class="card">
         <h2>Kelola data</h2>
         @error('bulan') <div class="field-error" style="margin-bottom:10px;">{{ $message }}</div> @enderror
-        <form method="POST" action="{{ route('pos.resetMonth') }}" style="display:inline;" onsubmit="return confirm('Hapus semua data bulan {{ $monthLabel }}? Tindakan ini tidak bisa dibatalkan.')">
+        <form method="POST" action="{{ route('pos.resetMonth') }}" style="display:inline;" data-confirm="Hapus semua data bulan {{ $monthLabel }}? Tindakan ini tidak bisa dibatalkan.">
             @csrf
             <input type="hidden" name="bulan" value="{{ $activeMonth }}">
-            <button type="submit" class="ghost danger">Hapus data bulan ini saja</button>
+            <button type="submit" class="btn btn-outline-danger">Hapus data bulan ini saja</button>
         </form>
-        <form method="POST" action="{{ route('pos.resetAll') }}" style="display:inline;" onsubmit="return confirm('Yakin hapus SEMUA data POS (semua bulan)? Tindakan ini tidak bisa dibatalkan.')">
+        <form method="POST" action="{{ route('pos.resetAll') }}" style="display:inline;" data-confirm="Yakin hapus SEMUA data POS (semua bulan)? Tindakan ini tidak bisa dibatalkan.">
             @csrf
-            <button type="submit" class="ghost danger" style="margin-left:8px;">Hapus SEMUA data (semua bulan)</button>
+            <button type="submit" class="btn btn-outline-danger" style="margin-left:8px;">Hapus SEMUA data (semua bulan)</button>
         </form>
     </div>
 
-    <script src="{{ asset('js/chart.umd.min.js') }}"></script>
     <script>
-        function pelangganAktif(rows) {
-            return {
-                rows: rows || [],
-                sort: 'bayar',
-                get sorted() {
-                    const arr = this.rows.slice();
-                    if (this.sort === 'trx') {
-                        arr.sort((a, b) => (b.trx - a.trx) || (b.bayar - a.bayar));
-                    } else {
-                        arr.sort((a, b) => (b.bayar - a.bayar) || (b.trx - a.trx));
-                    }
-                    return arr;
-                },
-            };
-        }
+        // Data grafik harian — dibaca chart-init.js (bundle Vite, Chart.js).
+        window.POS_GRAFIK = @json($grafikHarian);
+        window.POS_MONTH_LABEL = @json($monthLabel);
 
+        // — Pelanggan teraktif: urut ulang klien (tanpa Alpine) —
         (function () {
-            const canvas = document.getElementById('chartHarian');
-            if (!canvas || typeof Chart === 'undefined') return;
-            const data = @json($grafikHarian);
-            const jt = v => {
-                const n = v / 1000000;
-                return (Math.round(n * 100) / 100).toLocaleString('id-ID') + ' jt';
-            };
-            new Chart(canvas, {
-                type: 'line',
-                data: {
-                    labels: data.map(d => d.label),
-                    datasets: [
-                        {
-                            label: 'Diterima',
-                            data: data.map(d => d.diterima),
-                            borderColor: '#C06014',
-                            backgroundColor: 'rgba(192, 96, 20, 0.12)',
-                            fill: true,
-                            tension: 0.25,
-                            pointRadius: 2.5,
-                            borderWidth: 2,
-                        },
-                        {
-                            label: 'Kas bersih',
-                            data: data.map(d => d.bersih),
-                            borderColor: '#006600',
-                            backgroundColor: 'rgba(0, 102, 0, 0.10)',
-                            fill: true,
-                            tension: 0.25,
-                            pointRadius: 2.5,
-                            borderWidth: 2,
-                        },
-                    ],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top' },
-                        tooltip: {
-                            callbacks: {
-                                label: ctx => ctx.dataset.label + ': Rp' + Math.round(ctx.parsed.y).toLocaleString('id-ID') + ' (' + jt(ctx.parsed.y) + ')',
-                            },
-                        },
-                    },
-                    scales: {
-                        y: {
-                            ticks: { callback: v => jt(v) },
-                            grid: { color: 'rgba(0, 0, 0, 0.06)' },
-                        },
-                        x: {
-                            title: { display: true, text: 'Tanggal — {{ $monthLabel }}' },
-                        },
-                    },
-                },
+            const body = document.getElementById('pelangganAktifBody');
+            if (!body) return;
+            let sort = 'bayar';
+
+            function rupiahLocal(v) {
+                return 'Rp' + Math.round(parseFloat(v) || 0).toLocaleString('id-ID');
+            }
+
+            function render() {
+                const rows = Array.from(body.querySelectorAll('tr[data-bayar]'));
+                rows.sort((a, b) => {
+                    const aBayar = +a.dataset.bayar, bBayar = +b.dataset.bayar;
+                    const aTrx = +a.dataset.trx, bTrx = +b.dataset.trx;
+                    if (sort === 'trx') return (bTrx - aTrx) || (bBayar - aBayar);
+                    return (bBayar - aBayar) || (bTrx - aTrx);
+                });
+                rows.forEach((tr, i) => {
+                    tr.querySelector('.rank-i').textContent = i + 1;
+                    tr.querySelector('.pelanggan-bayar').textContent = rupiahLocal(tr.dataset.bayar);
+                    body.appendChild(tr);
+                });
+                const empty = body.querySelector('.pelanggan-empty');
+                if (empty) body.appendChild(empty);
+            }
+
+            document.querySelectorAll('.pelanggan-sort').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sort = btn.dataset.sort;
+                    document.querySelectorAll('.pelanggan-sort').forEach(b => {
+                        b.classList.toggle('btn-primary', b === btn);
+                        b.classList.toggle('btn-outline-secondary', b !== btn);
+                    });
+                    render();
+                });
             });
+
+            render();
         })();
     </script>
 @endif

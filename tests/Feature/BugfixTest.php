@@ -144,4 +144,55 @@ class BugfixTest extends TestCase
             InputLog::where('sale_id', $sale->id)->delete();
         }
     }
+
+    public function test_dotted_expense_amount_is_saved_as_full_number(): void
+    {
+        try {
+            $response = $this->post(route('pos.simpanExpense'), [
+                'expDate' => '2099-12-20',
+                'expAmount' => '15.000',
+                'expNote' => 'UjiTitikExpense',
+            ]);
+
+            $response->assertSessionHasNoErrors();
+            $this->assertDatabaseHas('expenses', [
+                'date' => '2099-12-20', 'amount' => 15000, 'note' => 'UjiTitikExpense',
+            ]);
+        } finally {
+            Expense::where('note', 'UjiTitikExpense')->delete();
+        }
+    }
+
+    public function test_dotted_product_price_is_saved_as_full_number(): void
+    {
+        try {
+            $response = $this->post(route('pos.simpanProduk'), [
+                'prodName' => 'UjiTitikProduk',
+                'prodPrice' => '15.000',
+            ]);
+
+            $response->assertSessionHasNoErrors();
+            $this->assertDatabaseHas('products', ['name' => 'UjiTitikProduk', 'price' => 15000]);
+        } finally {
+            Product::where('name', 'UjiTitikProduk')->delete();
+        }
+    }
+
+    public function test_dotted_debt_modal_amount_passes_integer_validation(): void
+    {
+        try {
+            $response = $this->post(route('pos.simpanHutangPelanggan'), [
+                'debtModalName' => 'UjiTitikHutang',
+                'debtModalAmount' => '25.000',
+                'debtModalDate' => '2099-12-20',
+            ]);
+
+            $response->assertSessionHasNoErrors();
+            $this->assertDatabaseHas('customer_ledgers', [
+                'name' => 'UjiTitikHutang', 'amount' => 25000,
+            ]);
+        } finally {
+            CustomerLedger::where('name', 'UjiTitikHutang')->delete();
+        }
+    }
 }
