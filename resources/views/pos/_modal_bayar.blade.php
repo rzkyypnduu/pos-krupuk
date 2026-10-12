@@ -6,13 +6,19 @@
     $payPayload = [];
     foreach ($sales as $s) {
         $p = $hpProcessed[$s->name] ?? null;
+        $debtsDesc = array_values(array_reverse($p['activeDebts'] ?? [])); // terbaru -> terlama
         $payPayload[$s->id] = [
             'name' => $s->name,
             'date' => $s->date->format('Y-m-d'),
             'total' => (int) $s->rounded_total,
             'paid' => (int) $s->paid,
             'paid_kemarin' => (int) $s->paid_kemarin,
-            'debt_total' => (int) ($p['totalSisa'] ?? 0),
+            'debts' => array_map(fn ($d) => [
+                'id' => $d['id'],
+                'date' => $d['date'],
+                'amount' => (int) $d['amount'],
+                'remaining' => (int) $d['remaining'],
+            ], $debtsDesc),
         ];
     }
 @endphp
@@ -44,7 +50,7 @@
                         <div class="pay-debt-title">
                             Hutang pelanggan ini
                         </div>
-                <div class="pay-debt-total" id="payDebtTotal" hidden>Sisa hutang: <b id="payDebtTotalAmt">Rp0</b></div>
+                <ul class="pay-debt-list" id="payDebtList" hidden></ul>
                 <div class="empty" id="payDebtEmpty" style="padding:12px;font-size:15px;">
                     Tidak ada catatan hutang.
                 </div>

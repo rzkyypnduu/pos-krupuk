@@ -154,11 +154,25 @@
             if (showKWrap) el('payKemarinAmt').textContent = rp(s.paid_kemarin);
         }
 
-        // sisa hutang pelanggan (satu angka total)
-        var total = s ? (s.debt_total || 0) : 0;
-        el('payDebtTotal').hidden = total <= 0;
-        if (total > 0) el('payDebtTotalAmt').textContent = rp(total);
-        el('payDebtEmpty').hidden = total > 0;
+        // daftar hutang (terbaru -> terlama, urutan dari payload)
+        var list = el('payDebtList');
+        list.innerHTML = '';
+        var debts = s ? (s.debts || []) : [];
+        debts.forEach(function (d, i) {
+            var li = document.createElement('li');
+            if (i === 0) li.className = 'last';
+            var date = document.createElement('span');
+            date.className = 'pd-date';
+            date.textContent = d.date;
+            var amt = document.createElement('span');
+            amt.className = 'pd-amt';
+            amt.textContent = rp(d.remaining);
+            li.appendChild(date);
+            li.appendChild(amt);
+            list.appendChild(li);
+        });
+        list.hidden = debts.length === 0;
+        el('payDebtEmpty').hidden = debts.length > 0;
 
         // ceklis "bayar kemarin" + form kedua
         var on = state.kemarin[state.openId] === true;

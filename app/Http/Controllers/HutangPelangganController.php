@@ -8,8 +8,9 @@ use App\Services\HutangService;
 use Illuminate\Http\Request;
 
 /**
- * Rekap hutang per pelanggan (tab Hasil): tambah entri, edit total via JSON,
- * hapus per baris, dan ganti nama pelanggan. Perhitungan sisa ada di HutangService.
+ * Rekap hutang per pelanggan (grid Excel di tab Hasil):
+ * tambah entri, edit sel/total via JSON, hapus per sel atau per baris,
+ * dan ganti nama pelanggan. Perhitungan sisa (LIFO) ada di HutangService.
  */
 class HutangPelangganController extends Controller
 {
@@ -87,6 +88,36 @@ class HutangPelangganController extends Controller
         return back()->with('success', 'Riwayat hutang dihapus.');
     }
 
+    public function adjustDebtCell(Request $request)
+    {
+        $debtId = $request->input('debt_id');
+        $newRemaining = max(0, parseRupiah($request->input('new_remaining'))); // aman terima "15.000"
+        $sheetDate = $this->activeDate($request);
+
+        $entry = CustomerLedger::find($debtId);
+        if (! $entry) {
+            return $request->expectsJson()
+                ? response()->json(['ok' => false, 'message' => 'Entri tidak ditemukan.'], 404)
+                : back();
+        }
+
+        // Sisa yang tampil = amount entri − pembayaran LIFO yang sudah menimpanya.
+        // Saat user mengedit sisa, pembayaran yang sudah berjalan dipertahankan —
+        // amount disesuaikan supaya sisa baru persis nilai yang dimasukkan.
+        $current = collect($this->hutang->processCustomerDebts($entry->name, $sheetDate)['activeDebts'])
+            ->firstWhere('id', $entry->id);
+        $remainingBefore = $current['remaining'] ?? 0;
+        $paidPortion = $entry->amount - $remainingBefore;
+        $entry->update(['amount' => max($newRemaining + $paidPortion, 0)]);
+
+        $proc = $this->hutang->processCustomerDebts($entry->name, $sheetDate);
+        if ($request->expectsJson()) {
+            return $this->debtJson($proc);
+        }
+
+        return back()->with('success', 'Hutang disesuaikan.');
+    }
+
     public function adjustTotalDebt(Request $request)
     {
         // "15.000" dinormalisasi ke 15000; nilai bukan angka tetap ditolak validasi.
@@ -121,11 +152,12 @@ class HutangPelangganController extends Controller
         return back()->with('success', 'Total hutang disesuaikan.');
     }
 
-    /** Respons JSON standar edit hutang: total sisa (dipakai JS klien). */
+    /** Respons JSON standar edit hutang: daftar entri aktif + total sisa (dipakai JS klien). */
     private function debtJson(array $proc)
     {
         return response()->json([
             'ok' => true,
+            'activeDebts' => $proc['activeDebts'],
             'totalSisa' => $proc['totalSisa'],
         ]);
     }
