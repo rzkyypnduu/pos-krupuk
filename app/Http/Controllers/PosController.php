@@ -182,7 +182,7 @@ class PosController extends Controller
         $totalStockMgmt = StockManagement::where(fn ($q) => $q->where('date', $txDate)->orWhereNull('date'))->get()->sum(fn ($o) => $o->subtotal());
         $totalRemain = StockRemaining::where('date', $txDate)->get()->sum(fn ($o) => $o->qty * $o->price);
         // Hutang pelanggan memakai angka yang sama dengan tab Hasil & rekap hutang
-        // (LIFO per pelanggan, termasuk deposit) — dihitung di index().
+        // (pecahan hutang per pelanggan, termasuk deposit) — dihitung di index().
         $totalHutangPel = $hpGrandTotal;
         $totalHutangPri = (int) PersonalLedger::where('date', $txDate)->sum('amount');
         $totalSaldo = (int) SaldoDeduction::where('date', $txDate)->get()->sum(fn ($s) => $s->result());

@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 /**
  * Rekap hutang per pelanggan (grid Excel di tab Hasil):
  * tambah entri, edit sel/total via JSON, hapus per sel atau per baris,
- * dan ganti nama pelanggan. Perhitungan sisa (LIFO) ada di HutangService.
+ * dan ganti nama pelanggan. Perhitungan sisa (pecahan hutang) ada di HutangService.
  */
 class HutangPelangganController extends Controller
 {
@@ -101,7 +101,7 @@ class HutangPelangganController extends Controller
                 : back();
         }
 
-        // Sisa yang tampil = amount entri − pembayaran LIFO yang sudah menimpanya.
+        // Sisa yang tampil = amount entri − pembayaran pecahan yang sudah menimpanya.
         // Saat user mengedit sisa, pembayaran yang sudah berjalan dipertahankan —
         // amount disesuaikan supaya sisa baru persis nilai yang dimasukkan.
         $current = collect($this->hutang->processCustomerDebts($entry->name, $sheetDate)['activeDebts'])

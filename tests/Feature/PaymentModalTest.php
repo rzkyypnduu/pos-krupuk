@@ -108,7 +108,7 @@ class PaymentModalTest extends TestCase
         $this->assertSame(0, $proc['deposit']);
     }
 
-    public function test_debts_are_cut_newest_first_lifo(): void
+    public function test_debts_are_cut_newest_first(): void
     {
         $name = 'Lifo_'.uniqid();
         CustomerLedger::create([
@@ -126,7 +126,7 @@ class PaymentModalTest extends TestCase
 
         $proc = $this->hutang()->processCustomerDebts($name);
 
-        // LIFO: 120rb dipotong dari hutang BARU (150rb) dulu → sisa 30rb; hutang lama utuh
+        // pecahan hutang: 120rb dipotong dari hutang BARU (150rb) dulu → sisa 30rb; hutang lama utuh
         $this->assertCount(2, $proc['activeDebts']);
         $this->assertSame('2026-09-28', $proc['activeDebts'][0]['date']);
         $this->assertSame(100000, $proc['activeDebts'][0]['remaining']);

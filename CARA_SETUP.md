@@ -153,7 +153,7 @@ urut dari atas ke bawah:
    - **Total keseluruhan aset** = stok minyak + manajemen stok + hutang pelanggan + sisa barang
    - **Saldo** = total aset − hutang pribadi
    - **Total** = total aset − pengurangan saldo − hutang pribadi
-   Hutang pelanggan memakai perhitungan LIFO yang sama dengan rekap hutang &
+   Hutang pelanggan memakai perhitungan pecahan hutang yang sama dengan rekap hutang &
    tab Hasil (angka `hpGrandTotal` dari `index()`), jadi ketiga angka hasil di
    kedua tab dijamin identik untuk tanggal yang sama. Neraca tetap dihitung per
    **tanggal aktif**.
@@ -296,7 +296,7 @@ lihat `tests/Unit/SpeechParserTest.php` dan `tests/Feature/SpeechParseTest.php`.
   - `Concerns/PosHelpers.php` — trait logika bersama (tanggal aktif, parameter URL,
     pembulatan total, parsing qty koma desimal, redirect balik ke POS)
 - `app/Services/HasilSheetService.php` — lembar hasil salin-tempel per tanggal
-- `app/Services/HutangService.php` — perhitungan sisa hutang pelanggan (LIFO) +
+- `app/Services/HutangService.php` — perhitungan sisa hutang pelanggan (pecahan hutang) +
   riwayat detail; dipakai PosController & HutangPelangganController
 - `app/Services/SpeechParser.php` — parser rule-based untuk speech-to-text
 - `database/migrations/2026_07_14_*` — 9 migration untuk tabel-tabel di atas,
@@ -308,7 +308,7 @@ lihat `tests/Unit/SpeechParserTest.php` dan `tests/Feature/SpeechParseTest.php`.
 - `resources/css/pos.scss` — seluruh CSS tema krupuk (di-import terakhir di app.scss)
 - `resources/js/` — bundle Vite: app.js (entry: bootstrap + import modul POS),
   pos-speech.js (mikrofon, Web Speech API, terapkan hasil ke form),
-  pos-pay.js (state pembayaran modal Bayar; default 0, tanpa prefill/preview LIFO),
+  pos-pay.js (state pembayaran modal Bayar; default 0, tanpa prefill/preview pecahan),
   pos-ui.js (delegasi `data-confirm`, `data-qty-step`, toast),
   pos-scroll.js (pulihkan posisi scroll per tab), chart-init.js (grafik Ringkasan)
 - `routes/web.php` — route `/pos` (GET + POST), `POST /pos/speech/parse`,

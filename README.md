@@ -2,7 +2,7 @@
 
 Aplikasi point-of-sale harian untuk usaha krupuk: transaksi kasir (input suara/manual),
 master produk, lembar hasil harian (stok minyak & barang, sisa barang, rekap hutang
-pelanggan LIFO, hutang pribadi, pengurangan saldo), ringkasan bulanan + grafik penjualan.
+pelanggan (pecahan hutang), hutang pribadi, pengurangan saldo), ringkasan bulanan + grafik penjualan.
 
 Dibangun dengan **Laravel 12** + **Bootstrap 5** (via Sass) + **Vite** — tanpa Alpine,
 tanpa CDN, seluruh aset dibundel lokal.
@@ -47,7 +47,7 @@ app/
   Models/                  → 13 model Eloquent
   Services/
     HasilSheetService.php  → lembar hasil: salin-tempel sekali per tanggal
-    HutangService.php      → perhitungan sisa hutang pelanggan (LIFO)
+    HutangService.php      → perhitungan sisa hutang pelanggan (pecahan hutang)
     SpeechParser.php       → parser rule-based untuk speech-to-text
   Support/helpers.php      → rupiah(), parseRupiah(), fmtKg()
 bootstrap/                 → app & routing (Laravel 11+ style)

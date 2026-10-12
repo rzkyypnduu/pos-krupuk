@@ -7,7 +7,7 @@ use App\Models\Sale;
 
 /**
  * Perhitungan sisa hutang pelanggan untuk tab Hasil (rekap & detail).
- * Pembayaran memotong entri terbaru dulu (LIFO) — sejajar preview modal Bayar.
+ * Pembayaran memotong pecahan hutang terbaru dulu — sejajar preview modal Bayar.
  */
 class HutangService
 {
@@ -27,7 +27,7 @@ class HutangService
             if ($l->type === 'tambah') {
                 $debts[] = ['id' => $l->id, 'amount' => $l->amount, 'remaining' => $l->amount, 'date' => $l->date->format('Y-m-d')];
             } else {
-                // LIFO: pembayaran memotong hutang TERBARU dulu (dari akhir daftar),
+                // pecahan hutang: pembayaran memotong hutang TERBARU dulu (dari akhir daftar),
                 // baru ke yang lebih lama — sejajar preview tick di modal Bayar
                 $payment = $l->amount;
                 for ($i = count($debts) - 1; $i >= 0 && $payment > 0; $i--) {
