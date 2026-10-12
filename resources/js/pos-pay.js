@@ -319,10 +319,4 @@
     if (el('payKemarinChk')) el('payKemarinChk').addEventListener('change', function () { toggleKemarin(this.checked); });
 
     renderAllRows();
-
-    // API untuk debugging/test bila perlu
-    window.POSPAY = {
-        open: open, close: close, toggleRow: toggleRow, toggleKemarin: toggleKemarin,
-        renderRow: renderRow, renderAllRows: renderRow, rp: rp, state: state, rows: rows,
-    };
 })();

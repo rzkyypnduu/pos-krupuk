@@ -62,7 +62,7 @@
     </div>
 
     {{-- Bagian 4: pelanggan teraktif — render server, urut ulang di klien (vanilla JS) --}}
-    <div class="card" id="pelangganAktifCard">
+    <div class="card">
         <h2>Pelanggan teraktif</h2>
         <div class="filter-btns">
             <button type="button" class="btn btn-primary pelanggan-sort" data-sort="bayar">Urut: Total Dibayar</button>

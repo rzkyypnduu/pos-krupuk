@@ -29,12 +29,14 @@ class SaldoController extends Controller
             'a' => (int) ($request->input('saldoA') ?? 0),
             'b' => (int) ($request->input('saldoB') ?? 0),
         ]);
+
         return $this->redirectToPos($request, ['tab' => 'hasil'], 'Hasil pengurangan saldo disimpan.');
     }
 
     public function hapusSaldo(Request $request)
     {
         SaldoDeduction::where('date', $this->activeDate($request))->delete();
+
         return back()->with('success', 'Pengurangan saldo dihapus.');
     }
 }

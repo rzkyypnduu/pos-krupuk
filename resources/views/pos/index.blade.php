@@ -48,7 +48,7 @@
             <a href="{{ route('pos', array_merge($baseParams, ['tab' => 'ringkasan'])) }}" class="tab-btn {{ $tab === 'ringkasan' ? 'active' : '' }}">Ringkasan</a>
         </div>
         <div class="date-switch">
-            <input type="date" id="activeDateInput" value="{{ $txDate }}"
+            <input type="date" value="{{ $txDate }}"
                    title="Tanggal aktif — semua tab mengikuti tanggal ini"
                    onchange="window.location.href='{{ route('pos', ['tab' => $tab]) }}&tx_date=' + this.value">
         </div>
@@ -75,7 +75,7 @@
             @include('pos._tab_hasil')
         </div>
 
-        <div class="tab-panel {{ $tab === 'ringkasan' ? 'active' : '' }}" id="tab-ringkasan">
+        <div class="tab-panel {{ $tab === 'ringkasan' ? 'active' : '' }}">
             @include('pos._tab_ringkasan')
         </div>
     </main>

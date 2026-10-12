@@ -12,7 +12,7 @@ class SpeechParserTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->parser = new SpeechParser();
+        $this->parser = new SpeechParser;
     }
 
     /** @return array<int, object> */

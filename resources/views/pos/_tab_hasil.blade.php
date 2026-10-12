@@ -116,10 +116,10 @@
 </div>
 
 @if($hpDetailName && $hpEntries)
-    <div class="card" id="hpDetailCard">
-        <h2 id="hpDetailTitle">Detail hutang &mdash; {{ $hpDetailName }}</h2>
+    <div class="card">
+        <h2>Detail hutang &mdash; {{ $hpDetailName }}</h2>
         <div class="table-wrap">
-            <table id="hpDetailTable">
+            <table>
                 <thead><tr><th>Jenis</th><th class="num">Jumlah</th><th class="num">Dibayar</th><th class="num">Saldo berjalan</th><th>Catatan</th><th></th></tr></thead>
                 <tbody>
                     @forelse ($hpEntries as $entry)
@@ -399,8 +399,9 @@
 <script>
 // — Format angka (pasangan PHP: rupiah()/fmtKg() di app/Support/helpers.php) —
 function fmtKgJs(value) {
-    const n = parseFloat(value) || 0;
-    return n % 1 === 0 ? String(n) : String(n).replace('.', ',');
+    const n = Number(value) || 0;
+    if (n === Math.trunc(n)) return String(Math.trunc(n));
+    return String(Math.round(n * 100) / 100).replace('.', ',');
 }
 function rupiahJs(value) {
     return 'Rp' + Math.round(parseFloat(value) || 0).toLocaleString('id-ID');

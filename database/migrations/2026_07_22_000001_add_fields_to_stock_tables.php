@@ -27,7 +27,6 @@ return new class extends Migration
 
         Schema::table('saldo_deductions', function (Blueprint $table) {
             $table->date('date')->nullable()->after('id');
-            $table->string('note')->nullable()->after('b');
         });
 
         Schema::create('expenses', function (Blueprint $table) {
@@ -44,7 +43,7 @@ return new class extends Migration
         Schema::dropIfExists('expenses');
 
         Schema::table('saldo_deductions', function (Blueprint $table) {
-            $table->dropColumn(['date', 'note']);
+            $table->dropColumn('date');
         });
 
         Schema::table('sales', function (Blueprint $table) {

@@ -35,11 +35,14 @@ class HutangService
                     $debts[$i]['remaining'] -= $cut;
                     $payment -= $cut;
                 }
-                if ($payment > 0) $deposit += $payment;
+                if ($payment > 0) {
+                    $deposit += $payment;
+                }
             }
         }
         $activeDebts = array_values(array_filter($debts, fn ($d) => $d['remaining'] > 0));
         $totalSisa = (int) array_sum(array_column($activeDebts, 'remaining'));
+
         return compact('activeDebts', 'totalSisa', 'deposit');
     }
 
@@ -51,8 +54,10 @@ class HutangService
             ->orderBy('date')->orderBy('id')->get();
         $running = 0;
         $sales = Sale::whereIn('id', $entries->pluck('sale_id')->filter()->unique())->get()->keyBy('id');
+
         return $entries->map(function ($l) use (&$running, $sales) {
             $running += $l->type === 'tambah' ? $l->amount : -$l->amount;
+
             return (object) [
                 'id' => $l->id, 'date' => $l->date->format('Y-m-d'),
                 'type' => $l->type, 'amount' => $l->amount, 'running' => $running,

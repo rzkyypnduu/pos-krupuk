@@ -13,7 +13,6 @@ return new class extends Migration
             $table->date('date');
             $table->string('name');
             $table->unsignedBigInteger('amount');
-            $table->string('note')->nullable();
             $table->timestamps();
         });
     }

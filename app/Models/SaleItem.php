@@ -12,9 +12,4 @@ class SaleItem extends Model
         'qty' => 'float',
         'price' => 'integer',
     ];
-
-    public function subtotal(): float
-    {
-        return $this->qty * $this->price;
-    }
 }

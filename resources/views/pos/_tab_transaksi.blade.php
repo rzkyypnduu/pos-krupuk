@@ -91,14 +91,14 @@
                             </div>
                         </div>
 
-                        <div id="qtyGridWrap" style="margin-top:14px;">
+                        <div style="margin-top:14px;">
                             <div class="form-group-label"
                                 style="font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);">
                                 Jumlah per produk (kg)</div>
                             @if ($products->isEmpty())
                                 <div class="empty">Tambahkan produk dulu di tab Master Produk.</div>
                             @else
-                                <div class="tx-product-grid" id="qtyGrid">
+                                <div class="tx-product-grid">
                                     @foreach ($products as $product)
                                         @php $qtyVal = $txQty[$product->id] ?? null; @endphp
                                         <div class="product-card {{ $qtyVal && (float) $qtyVal > 0 ? 'has-qty' : '' }}">
@@ -404,12 +404,6 @@ recalcTotals (pembulatan, pasangan PosHelpers::roundTotal — lihat komentar di 
         else { box.className = 'status-box zero'; box.innerHTML = 'Lunas &#10003;'; }
     }
     function formatRupiah(n) { return 'Rp' + Number(n).toLocaleString('id-ID'); }
-    // pasangan fmtKg() di PHP: bulat -> "1" (tanpa ,0), desimal -> "1,5" (maks 2 desimal)
-    function fmtKgJs(qty) {
-        var n = Number(qty) || 0;
-        if (n === Math.trunc(n)) return String(Math.trunc(n));
-        return String(Math.round(n * 100) / 100).replace('.', ',');
-    }
     function recalcTotals() {
         var inputs = document.querySelectorAll('[data-product-id]');
         var prices = {!! $products->pluck('price', 'id')->toJson() !!};

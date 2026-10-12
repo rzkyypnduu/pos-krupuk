@@ -14,11 +14,10 @@ class SpeechController extends Controller
 {
     /** Skor kandidat N-best: per item cocok, bonus bila nama terisi, penalti per item "loose". */
     private const SCORE_PER_ITEM = 10;
+
     private const SCORE_NAME_BONUS = 5;
 
-    public function __construct(private SpeechParser $parser)
-    {
-    }
+    public function __construct(private SpeechParser $parser) {}
 
     public function parseSpeech(Request $request)
     {
@@ -36,7 +35,7 @@ class SpeechController extends Controller
         $candidates = [$request->input('text', '')];
         foreach ((array) $request->input('alternatives', []) as $alt) {
             $alt = trim((string) $alt);
-            if ($alt !== '' && !in_array($alt, $candidates, true)) {
+            if ($alt !== '' && ! in_array($alt, $candidates, true)) {
                 $candidates[] = $alt;
             }
         }

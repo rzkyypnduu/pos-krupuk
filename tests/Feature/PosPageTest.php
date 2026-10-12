@@ -164,7 +164,7 @@ class PosPageTest extends TestCase
 
         // Bersihkan berada di dalam kotak transkrip, ujung kanan setelah teksnya
         $this->assertMatchesRegularExpression(
-            '/id="txSpeechTranscript"[^>]*>\s*<span[^>]*id="txSpeechTranscriptText"[^>]*><\/span>\s*<button[^>]*id="txSpeechDelete"[^>]*>Bersihkan</s',
+            '/id="txSpeechTranscript"[^>]*>\s*<span[^>]*id="txSpeechTranscriptText"[^>]*><\/span>\s*<button[^>]*id="txSpeechDelete"[^>]*>Bersihkan<\/button>/',
             $html
         );
         // nama tombol: Bersihkan = buang teks suara saja, Hapus = teks suara + jumlah

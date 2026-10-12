@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class SaldoDeduction extends Model
 {
-    protected $fillable = ['date', 'a', 'b', 'note'];
+    protected $fillable = ['date', 'a', 'b'];
 
     protected $casts = [
         'date' => 'date',

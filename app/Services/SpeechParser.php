@@ -38,8 +38,8 @@ class SpeechParser
     ];
 
     /**
-     * @param string $raw   transkrip asli dari browser
-     * @param iterable $products koleksi {id,name,price}
+     * @param  string  $raw  transkrip asli dari browser
+     * @param  iterable  $products  koleksi {id,name,price}
      * @return array{raw:string,normalized:string,name:?string,items:array,note:?string,total_kg:float,total:int}
      */
     public function parse(string $raw, iterable $products): array
@@ -101,6 +101,7 @@ class SpeechParser
     public function tokenize(string $text): array
     {
         preg_match_all('/\d+(?:[.,]\d+)?|\p{L}+/u', $text, $m);
+
         return $m[0];
     }
 
@@ -131,6 +132,7 @@ class SpeechParser
                 }
                 $norms[$next - 1] = $this->numStr((float) $value);
                 $i = $next;
+
                 continue;
             }
 
@@ -141,6 +143,7 @@ class SpeechParser
                 }
                 $norms[$next - 1] = $this->numStr($value);
                 $i = $next;
+
                 continue;
             }
 
@@ -158,13 +161,14 @@ class SpeechParser
     private function mergeHalfValues(array $norms): array
     {
         foreach (array_keys($norms) as $i) {
-            if ($norms[$i] === '' || !is_numeric($norms[$i]) || abs((float) $norms[$i] - 0.5) > 1e-9) {
+            if ($norms[$i] === '' || ! is_numeric($norms[$i]) || abs((float) $norms[$i] - 0.5) > 1e-9) {
                 continue;
             }
             $prev = $i - 1;
             if ($prev >= 0 && $norms[$prev] !== '' && is_numeric($norms[$prev])) {
                 $norms[$prev] = $this->numStr((float) $norms[$prev] + 0.5);
                 $norms[$i] = '';
+
                 continue;
             }
             if ($prev >= 1 && $norms[$prev] !== '' && $this->unitFactor(mb_strtolower($norms[$prev])) !== null
@@ -182,6 +186,7 @@ class SpeechParser
         if (preg_match('/^\d{1,3}(\.\d{3})+$/', $token)) {
             return (string) (int) str_replace('.', '', $token);
         }
+
         return (string) (float) str_replace(',', '.', $token);
     }
 
@@ -193,6 +198,7 @@ class SpeechParser
     private function isNumberWord(string $word): bool
     {
         $stem = $this->stem(mb_strtolower($word));
+
         return isset(self::DIGITS[$stem]) || in_array($stem, self::SCALES, true);
     }
 
@@ -220,6 +226,7 @@ class SpeechParser
                     $decStr = '';
                     $started = true;
                     $end++;
+
                     continue;
                 }
                 break;
@@ -229,11 +236,13 @@ class SpeechParser
                 if (isset(self::DIGITS[$w])) {
                     $decStr .= self::DIGITS[$w];
                     $end++;
+
                     continue;
                 }
                 if (preg_match('/^\d+$/', $raw)) {
                     $decStr .= $raw;
                     $end++;
+
                     continue;
                 }
                 break;
@@ -250,6 +259,7 @@ class SpeechParser
                 }
                 $started = true;
                 $end++;
+
                 continue;
             }
 
@@ -294,13 +304,13 @@ class SpeechParser
             $end++;
         }
 
-        if (!$started) {
+        if (! $started) {
             return [0.0, $i];
         }
 
         $value = $result + $current;
         if ($decStr !== null && $decStr !== '') {
-            $value = (float) ((string) $value . '.' . $decStr);
+            $value = (float) ((string) $value.'.'.$decStr);
         }
 
         return [$value, max($end, $i + 1)];
@@ -313,6 +323,7 @@ class SpeechParser
                 return mb_substr($word, 0, -strlen($suffix));
             }
         }
+
         return $word;
     }
 
@@ -402,6 +413,7 @@ class SpeechParser
             if ($ra !== $rb) {
                 return $rb <=> $ra;
             }
+
             return ($b['end'] - $b['start']) <=> ($a['end'] - $a['start']);
         });
 
@@ -426,6 +438,7 @@ class SpeechParser
         if (is_numeric($norm)) {
             return true;
         }
+
         return isset(self::UNITS[mb_strtolower($norm)]);
     }
 
@@ -492,6 +505,7 @@ class SpeechParser
                 $merged[$pid]['unit'] = $item['unit'];
                 $merged[$pid]['subtotal'] = $item['subtotal'];
                 $merged[$pid]['confidence'] = $item['confidence'];
+
                 continue;
             }
             $merged[$pid] = $item;
@@ -508,6 +522,7 @@ class SpeechParser
         if ($len <= 5) {
             return 1;
         }
+
         return 2;
     }
 
@@ -517,6 +532,7 @@ class SpeechParser
             return 0;
         }
         $dist = levenshtein($a, $b);
+
         return $dist === false ? PHP_INT_MAX : $dist;
     }
 
@@ -575,13 +591,14 @@ class SpeechParser
                 continue;
             }
             foreach ([$idx - 1, $idx + 1] as $nIdx) {
-                if (!isset($window[$nIdx])) {
+                if (! isset($window[$nIdx])) {
                     continue;
                 }
                 $nei = $window[$nIdx];
-                if (isset($used[$nei['i']]) || !is_numeric($nei['norm']) || $nei['norm'] === '') {
+                if (isset($used[$nei['i']]) || ! is_numeric($nei['norm']) || $nei['norm'] === '') {
                     continue;
                 }
+
                 return [(float) $nei['norm'] * $unit['factor'], $unit['label'], [$entry['i'], $nei['i']]];
             }
         }
@@ -600,6 +617,7 @@ class SpeechParser
                 if ($value <= 0) {
                     continue;
                 }
+
                 return [$value, 'kg', [$entry['i']]];
             }
         }
@@ -609,9 +627,10 @@ class SpeechParser
 
     private function unitFactor(string $word): ?array
     {
-        if (!isset(self::UNITS[$word])) {
+        if (! isset(self::UNITS[$word])) {
             return null;
         }
+
         return ['factor' => self::UNITS[$word], 'label' => $word];
     }
 
@@ -637,6 +656,7 @@ class SpeechParser
         }
 
         $name = trim(implode(' ', $parts));
+
         return $name === '' ? null : $name;
     }
 
@@ -663,6 +683,7 @@ class SpeechParser
         }
 
         $note = trim(implode(' ', $parts));
+
         return $note === '' ? null : $note;
     }
 }

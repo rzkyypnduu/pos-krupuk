@@ -69,7 +69,6 @@ class PosController extends Controller
         $expDate = $request->query('exp_date', now()->toDateString());
         $stockMgmtName = $request->query('sm_name', '');
         $stockMgmtPrice = $request->query('sm_price', null);
-        $stockMgmtSacks = $request->query('sm_sacks', '[]');
         $remainName = (string) old('remainName', '');
         $remainQty = old('remainQty', '');
         $remainPrice = old('remainPrice', 0);
@@ -161,7 +160,7 @@ class PosController extends Controller
             'tab', 'activeMonth', 'hpDetailName', 'editingSaleId',
             'debtModalOpen', 'debtModalName', 'showTxForm',
             'txDate', 'txName', 'txQty', 'txPaid', 'txPaidTouched', 'txNote',
-            'expDate', 'stockMgmtName', 'stockMgmtPrice', 'stockMgmtSacks',
+            'stockMgmtName', 'stockMgmtPrice',
             'remainName', 'remainQty', 'remainPrice',
             'products', 'sales', 'dayExpenses',
             'oilStocks', 'stockMgmts', 'stockRemainings',
