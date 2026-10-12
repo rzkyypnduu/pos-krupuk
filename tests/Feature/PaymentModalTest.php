@@ -363,33 +363,43 @@ class PaymentModalTest extends TestCase
         $this->assertStringContainsString('Bayar kemarin '.rupiah(0), $row);
     }
 
-    public function test_toggle_kemarin_off_moves_money_to_paid(): void
+    public function test_toggle_kemarin_off_recalculates_diff_without_moving_money(): void
     {
         $name = 'TglKmr_'.uniqid();
         $sale = Sale::create([
             'date' => '2026-10-01', 'name' => $name, 'raw_total' => 200000,
-            'rounded_total' => 200000, 'paid' => 20000, 'paid_kemarin' => 150000, 'diff' => 180000,
+            'rounded_total' => 200000, 'paid' => 20000, 'paid_kemarin' => 150000,
+            'kemarin_active' => true, 'diff' => 180000,
         ]);
 
+        // OFF: hanya toggle flag + hitung ulang diff — TANPA memindahkan uang
         $res = $this->postJson('/pos/transaksi/'.$sale->id.'/toggle-kemarin', ['active' => 0]);
-        $res->assertOk()->assertJson(['ok' => true, 'paid' => 170000, 'paid_kemarin' => 0, 'diff' => 30000]);
+        $res->assertOk()->assertJson(['ok' => true, 'paid' => 20000, 'paid_kemarin' => 150000, 'diff' => 30000]);
 
         $sale->refresh();
-        $this->assertSame(170000, $sale->paid, 'Uang kemarin pindah ke bayar hari ini.');
-        $this->assertSame(0, $sale->paid_kemarin);
-        $this->assertSame(30000, $sale->diff);
+        $this->assertSame(20000, $sale->paid, 'paid tidak berubah (uang tidak dipindahkan).');
+        $this->assertSame(150000, $sale->paid_kemarin, 'paid_kemarin tidak berubah.');
+        $this->assertFalse($sale->kemarin_active);
+        $this->assertSame(30000, $sale->diff, 'diff = 200000 - 20000 - 150000.');
         // tombol Bayar tidak berubah; ledger tidak disentuh
         $this->assertFalse($sale->is_paid_btn_clicked);
         $this->assertSame(0, CustomerLedger::where('sale_id', $sale->id)->count());
 
-        // render ulang: badge hilang di baris ini, status ikut hitungan baru
+        // ON lagi: flag kembali, diff kembali — simetris
+        $this->postJson('/pos/transaksi/'.$sale->id.'/toggle-kemarin', ['active' => 1]);
+        $sale->refresh();
+        $this->assertTrue($sale->kemarin_active);
+        $this->assertSame(180000, $sale->diff, 'diff = 200000 - 20000 (paid_kemarin tidak dihitung).');
+        $this->assertSame(20000, $sale->paid);
+        $this->assertSame(150000, $sale->paid_kemarin);
+
+        // render ulang: badge tampil lagi di baris ini
         $html = $this->get('/pos?tab=transaksi&tx_date=2026-10-01')->getContent();
         $row = $this->rowOfSale($html, $name);
-        $this->assertStringNotContainsString('Bayar kemarin '.rupiah(150000), $row);
-        $this->assertStringContainsString('Kurang '.rupiah(30000), $row);
+        $this->assertStringContainsString('Bayar kemarin '.rupiah(150000), $row);
     }
 
-    public function test_toggle_kemarin_on_is_noop_and_off_twice_is_stable(): void
+    public function test_toggle_kemarin_on_off_is_idempotent(): void
     {
         $sale = Sale::create([
             'date' => '2026-10-01', 'name' => 'TglOn_'.uniqid(),
@@ -397,14 +407,16 @@ class PaymentModalTest extends TestCase
             'paid' => 0, 'paid_kemarin' => 0, 'diff' => 100000,
         ]);
 
-        // ON tanpa uang kemarin = tidak mengubah apa pun (nilai baru tercatat lewat modal)
+        // ON: set kemarin_active = true, diff tidak berubah (paid_kemarin = 0)
         $this->postJson('/pos/transaksi/'.$sale->id.'/toggle-kemarin', ['active' => 1])
-            ->assertOk()->assertJson(['paid' => 0, 'paid_kemarin' => 0]);
+            ->assertOk()->assertJson(['paid' => 0, 'paid_kemarin' => 0, 'diff' => 100000]);
+        $this->assertTrue($sale->refresh()->kemarin_active);
 
-        // OFF lagi saat paid_kemarin sudah 0 = idempoten (tidak menduplikasi uang)
+        // OFF: set kemarin_active = false, diff tidak berubah (paid_kemarin = 0)
         $this->postJson('/pos/transaksi/'.$sale->id.'/toggle-kemarin', ['active' => 0])
             ->assertOk()->assertJson(['paid' => 0, 'paid_kemarin' => 0, 'diff' => 100000]);
         $sale->refresh();
+        $this->assertFalse($sale->kemarin_active);
         $this->assertSame(0, $sale->paid);
         $this->assertSame(100000, $sale->diff);
     }
@@ -505,8 +517,8 @@ class PaymentModalTest extends TestCase
         $this->assertStringContainsString('window.POS_PAY', $html);
 
         $js = (string) file_get_contents(base_path('resources/js/pos-pay.js'));
-        // ceklis "bayar kemarin" di-seed per baris dari paid_kemarin (tanpa Alpine store)
-        $this->assertStringContainsString('state.kemarin[id] = (rows[id].paid_kemarin || 0) > 0', $js);
+        // ceklis "bayar kemarin" di-seed per baris dari kolom kemarin_active (tanpa Alpine store)
+        $this->assertStringContainsString('state.kemarin[id] = !!rows[id].kemarin_active', $js);
         $this->assertStringContainsString('String(s.paid_kemarin)', $js);
     }
 

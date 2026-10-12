@@ -1,12 +1,13 @@
 /**
  * pos-pay.js — state pembayaran (vanilla JS, tanpa Alpine).
- * Sumber data: window.POS_PAY (disuntik halaman _modal_bayar) — diubah jadi
- * window.POSPAY. "Bayar hari ini" = TOTAL pembayaran transaksi ini (input terakhir
- * menang); uang baru yang benar-benar masuk = max(0, (payH+payK) - (paid+paid_kemarin)).
- * Field default 0; ceklis "Bayar kemarin" ON bila transaksi sudah punya
- * paid_kemarin > 0 (mencerminkan data tersimpan — tetap ON setelah reload).
- * Ceklis OFF (di tabel / di modal) = pindah alokasi uang ke "bayar hari ini",
- * live tanpa reload, dan tersimpan ke server.
+ * Sumber data: window.POS_PAY (disuntik halaman _modal_bayar).
+ * "Bayar hari ini" = TOTAL pembayaran transaksi ini (input terakhir menang);
+ * uang baru yang benar-benar masuk = max(0, (payH+payK) - (paid+paid_kemarin)).
+ * Field default 0; ceklis "Bayar kemarin" ON bila kolom kemarin_active = true.
+ * Ceklis ON/OFF (di tabel / di modal) = hanya toggle flag kemarin_active —
+ * TANPA memindahkan uang antara paid dan paid_kemarin. diff dihitung server:
+ *   ON  → diff = rounded_total - paid
+ *   OFF → diff = rounded_total - paid - paid_kemarin
  * Modal memakai Bootstrap Modal (window.bootstrap dari bundle Vite); baris tabel
  * dirender server oleh Blade, lalu diperbarui renderRow() saat state berubah.
  */
@@ -30,9 +31,9 @@
         formH: '0',
     };
 
-    // seed ceklis dari DB: ON kalau paid_kemarin sudah tercatat
+    // seed ceklis dari DB: ON kalau kemarin_active = true
     Object.keys(rows).forEach(function (id) {
-        state.kemarin[id] = (rows[id].paid_kemarin || 0) > 0;
+        state.kemarin[id] = !!rows[id].kemarin_active;
     });
 
     function el(id) { return document.getElementById(id); }
@@ -197,19 +198,15 @@
         renderMoney();
     }
 
-    /** Ceklis ON (di modal) = buka form + kembalikan uang dari "hari ini" ke "kemarin" (live, simetris dgn OFF). */
+    /** Ceklis ON (di modal) = buka form kedua; OFF = sembunyikan + reset formK ke 0.
+     *  Tanpa memindahkan uang antara formH dan formK (server juga tidak memindahkan). */
     function toggleKemarin(checked) {
         var s = sale();
         if (!s) return;
         state.kemarin[state.openId] = checked;
         if (checked) {
-            // pindah alokasi balik: uang dari "bayar hari ini" kembali ke "bayar kemarin" (live)
-            var prev = s.paid_kemarin || 0;
-            state.formK = String(prev);
-            state.formH = String(Math.max(0, parse(state.formH) - prev));
+            state.formK = (s.paid_kemarin > 0) ? String(s.paid_kemarin) : '0';
         } else {
-            // pindah alokasi: uang kemarin masuk ke form "bayar hari ini" (live)
-            state.formH = String(parse(state.formH) + (s.paid_kemarin || 0));
             state.formK = '0';
         }
         renderModal();
@@ -249,25 +246,14 @@
     });
 
     /**
-     * Toggle ceklis di baris tabel: OFF langsung memindahkan uang ke
-     * "bayar hari ini" di server (persisten), dengan update optimistik
-     * supaya Status/Dibayar berubah live tanpa reload.
+     * Toggle ceklis di baris tabel: hanya mengubah flag kemarin_active (persisten
+     * di server) + update live Status/Dibayar via renderRow — TANPA memindahkan uang.
      */
     function toggleRow(id, active) {
         var r = rows[id];
         if (!r) return;
 
         state.kemarin[id] = active;
-
-        var before = { paid: r.paid, paid_kemarin: r.paid_kemarin, diff: r.diff };
-        var moved = false;
-        if (!active && (r.paid_kemarin || 0) > 0) {
-            // optimistik: uang pindah alokasi sebelum server merespons
-            r.paid = (r.paid || 0) + r.paid_kemarin;
-            r.paid_kemarin = 0;
-            r.diff = (r.total || 0) - r.paid;
-            moved = true;
-        }
         renderRow(id);
 
         fetch(posUrl + '/' + id + '/toggle-kemarin', {
@@ -294,11 +280,6 @@
             })
             .catch(function () {
                 // gagal -> kembalikan state seperti semula + beri tahu user
-                if (moved) {
-                    r.paid = before.paid;
-                    r.paid_kemarin = before.paid_kemarin;
-                    r.diff = before.diff;
-                }
                 state.kemarin[id] = !active;
                 renderRow(id);
                 if (window.posToast) window.posToast('Gagal menyimpan perubahan "bayar kemarin".');

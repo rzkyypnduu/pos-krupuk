@@ -176,9 +176,8 @@ class TransaksiController extends Controller
             $sale->update([
                 'paid' => $payHariIni,
                 'diff' => $sale->rounded_total - $payHariIni,
-                // ceklis OFF = nonaktifkan bayar kemarin (client sudah memindahkan
-                // uangnya ke form "bayar hari ini" → tidak hilang, hanya pindah)
                 'paid_kemarin' => $pakaiKemarin ? $payKemarin : 0,
+                'kemarin_active' => $pakaiKemarin,
                 // tombol Bayar dipencet = ditandai selesai (abu), termasuk nominal 0/kosong:
                 // anggapannya transaksi selesai & hari ini memang tidak bayar sama sekali
                 'is_paid_btn_clicked' => true,
@@ -216,10 +215,10 @@ class TransaksiController extends Controller
 
     /**
      * Toggle ceklis "Bayar kemarin" di baris tabel (live, via fetch).
-     * OFF (active=0) = pindah alokasi: uang paid_kemarin dimasukkan ke "bayar hari ini"
-     * (paid += paid_kemarin; paid_kemarin = 0; diff dihitung ulang). Total Dibayar &
-     * rekap Diterima tidak berubah — uang hanya berpindah, tidak hilang.
-     * ON (active=1) tidak mengubah angka (nilai kemarin baru tercatat lewat modal Bayar).
+     * Hanya mengubah flag kemarin_active + menghitung ulang diff — TANPA memindahkan
+     * uang antara paid dan paid_kemarin. diff dihitung:
+     *   ON  → diff = rounded_total - paid (paid_kemarin dialokasikan ke "kemarin")
+     *   OFF → diff = rounded_total - paid - paid_kemarin (uang ikut mengurangi tagihan)
      * Tidak menyentuh customer_ledgers & is_paid_btn_clicked.
      */
     public function toggleKemarin(Request $request, int $saleId)
@@ -231,14 +230,11 @@ class TransaksiController extends Controller
 
         $active = (bool) $request->input('active');
 
-        if (! $active && $sale->paid_kemarin > 0) {
-            DB::transaction(function () use ($sale) {
-                $sale->paid += $sale->paid_kemarin;
-                $sale->paid_kemarin = 0;
-                $sale->diff = $sale->rounded_total - $sale->paid;
-                $sale->save();
-            });
-        }
+        DB::transaction(function () use ($sale, $active) {
+            $sale->kemarin_active = $active;
+            $sale->diff = $sale->rounded_total - $sale->paid - ($active ? 0 : $sale->paid_kemarin);
+            $sale->save();
+        });
 
         return response()->json([
             'ok' => true,

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sale extends Model
 {
-    protected $fillable = ['date', 'name', 'raw_total', 'rounded_total', 'paid', 'paid_kemarin', 'diff', 'note', 'is_paid_btn_clicked'];
+    protected $fillable = ['date', 'name', 'raw_total', 'rounded_total', 'paid', 'paid_kemarin', 'kemarin_active', 'diff', 'note', 'is_paid_btn_clicked'];
 
     protected $casts = [
         'date' => 'date',
@@ -14,6 +14,7 @@ class Sale extends Model
         'rounded_total' => 'integer',
         'paid' => 'integer',
         'paid_kemarin' => 'integer',
+        'kemarin_active' => 'boolean',
         'diff' => 'integer',
         'is_paid_btn_clicked' => 'boolean',
     ];

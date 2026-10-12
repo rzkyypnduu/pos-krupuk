@@ -219,7 +219,7 @@
                                 <div class="status-stack">
                                     <span class="badge {{ $tx->diff > 0 ? 'debt' : ($tx->diff < 0 ? 'paid' : 'zero') }}"
                                         data-pay-badge>{{ $tx->diff > 0 ? 'Kurang ' . rupiah($tx->diff) : ($tx->diff < 0 ? 'Lebih ' . rupiah(-$tx->diff) : 'Lunas') }}</span>
-                                    <span class="badge paid-outline{{ $tx->paid_kemarin > 0 ? '' : ' d-none' }}"
+                                    <span class="badge paid-outline{{ $tx->kemarin_active ? '' : ' d-none' }}"
                                         data-pay-kbadge title="Sebagian uang dipakai membayar hutang sebelumnya">Bayar
                                         kemarin {{ rupiah($tx->paid_kemarin) }}</span>
                                 </div>
@@ -230,10 +230,10 @@
                                         class="btn {{ $tx->is_paid_btn_clicked ? 'btn-outline-secondary' : 'btn-success' }}"
                                         title="Buka modal pembayaran {{ $tx->name }}"
                                         data-pay-open="{{ $tx->id }}">Bayar</button>
-                                    <label class="ck-kemarin{{ $tx->paid_kemarin > 0 ? ' on' : '' }}"
+                                    <label class="ck-kemarin{{ $tx->kemarin_active ? ' on' : '' }}"
                                         title="Aktifkan bila pembeli juga membayar hutang sebelumnya">
                                         <input type="checkbox" id="ckKmr{{ $tx->id }}" data-pay-ck="{{ $tx->id }}"
-                                            @checked($tx->paid_kemarin > 0)>
+                                            @checked($tx->kemarin_active)>
                                         <span>Bayar kemarin</span>
                                     </label>
                                     <form method="POST" action="{{ route('pos.loadForPayment', $tx->id) }}"

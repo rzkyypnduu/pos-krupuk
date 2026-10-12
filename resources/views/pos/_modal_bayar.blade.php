@@ -13,6 +13,7 @@
             'total' => (int) $s->rounded_total,
             'paid' => (int) $s->paid,
             'paid_kemarin' => (int) $s->paid_kemarin,
+            'kemarin_active' => (bool) $s->kemarin_active,
             'debts' => array_map(fn ($d) => [
                 'id' => $d['id'],
                 'date' => $d['date'],
