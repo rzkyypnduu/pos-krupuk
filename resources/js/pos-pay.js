@@ -196,13 +196,16 @@
         renderMoney();
     }
 
-    /** Ceklis ON (di modal) = buka form; field kemarin diisi nilai terakhir tercatat. */
+    /** Ceklis ON (di modal) = buka form + kembalikan uang dari "hari ini" ke "kemarin" (live, simetris dgn OFF). */
     function toggleKemarin(checked) {
         var s = sale();
         if (!s) return;
         state.kemarin[state.openId] = checked;
         if (checked) {
-            state.formK = s.paid_kemarin > 0 ? String(s.paid_kemarin) : '0';
+            // pindah alokasi balik: uang dari "bayar hari ini" kembali ke "bayar kemarin" (live)
+            var prev = s.paid_kemarin || 0;
+            state.formK = String(prev);
+            state.formH = String(Math.max(0, parse(state.formH) - prev));
         } else {
             // pindah alokasi: uang kemarin masuk ke form "bayar hari ini" (live)
             state.formH = String(parse(state.formH) + (s.paid_kemarin || 0));
