@@ -7,43 +7,35 @@ use App\Models\Sale;
 
 /**
  * Perhitungan sisa hutang pelanggan untuk tab Hasil (rekap & detail).
- * Pembayaran memotong entri terbaru dulu (LIFO) — sejajar preview modal Bayar.
+ * Ledger bersifat catatan manual (tambah/bayar) — sisa = Σ tambah − Σ bayar,
+ * tanpa alokasi pembayaran ke entri tertentu.
  */
 class HutangService
 {
     /**
      * Sisa hutang satu pelanggan pada sebuah lembar tanggal:
-     * activeDebts (id, amount, remaining, date), totalSisa, dan deposit
-     * (kelebihan bayar yang melebihi seluruh entri).
+     * totalSisa (selisih positif = masih berhutang) dan deposit
+     * (kelebihan bayar yang melebihi seluruh tambahan).
      */
     public function processCustomerDebts(string $name, ?string $sheetDate = null): array
     {
         $entries = CustomerLedger::forSheet($sheetDate)
             ->where('name', $name)
-            ->orderBy('date')->orderBy('id')->get();
-        $debts = [];
-        $deposit = 0;
+            ->get();
+        $tambah = 0;
+        $bayar = 0;
         foreach ($entries as $l) {
             if ($l->type === 'tambah') {
-                $debts[] = ['id' => $l->id, 'amount' => $l->amount, 'remaining' => $l->amount, 'date' => $l->date->format('Y-m-d')];
+                $tambah += $l->amount;
             } else {
-                // LIFO: pembayaran memotong hutang TERBARU dulu (dari akhir daftar),
-                // baru ke yang lebih lama — sejajar preview tick di modal Bayar
-                $payment = $l->amount;
-                for ($i = count($debts) - 1; $i >= 0 && $payment > 0; $i--) {
-                    $cut = min($payment, $debts[$i]['remaining']);
-                    $debts[$i]['remaining'] -= $cut;
-                    $payment -= $cut;
-                }
-                if ($payment > 0) {
-                    $deposit += $payment;
-                }
+                $bayar += $l->amount;
             }
         }
-        $activeDebts = array_values(array_filter($debts, fn ($d) => $d['remaining'] > 0));
-        $totalSisa = (int) array_sum(array_column($activeDebts, 'remaining'));
+        $net = $tambah - $bayar;
+        $totalSisa = max(0, $net);
+        $deposit = max(0, -$net);
 
-        return compact('activeDebts', 'totalSisa', 'deposit');
+        return compact('totalSisa', 'deposit');
     }
 
     /** Riwayat lengkap satu pelanggan (untuk panel detail) dengan saldo berjalan. */

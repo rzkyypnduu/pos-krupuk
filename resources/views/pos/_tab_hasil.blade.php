@@ -65,7 +65,6 @@
             <thead>
                 <tr>
                     <th class="hp-head">Nama</th>
-                    <th class="hp-head num" colspan="{{ max((int) $maxCols, 1) }}">Hutang</th>
                     <th class="hp-head num">Total</th>
                     <th class="hp-head"></th>
                 </tr>
@@ -78,17 +77,6 @@
                             <span class="hp-name" title="Klik untuk ubah nama">{{ $name }}</span>
                             <input class="hp-inp hp-name-inp" type="text" value="{{ $name }}" data-val="{{ $name }}" maxlength="255">
                         </td>
-                        @for ($i = 0; $i < max((int) $maxCols, 1); $i++)
-                            @if (isset($p['activeDebts'][$i]))
-                                @php $d = $p['activeDebts'][$i]; @endphp
-                                <td class="num hp-cell hp-debt-cell" data-debt-id="{{ $d['id'] }}">
-                                    <span class="hp-amt" title="Klik untuk edit — {{ $d['date'] }}">{{ rupiah($d['remaining']) }}</span>
-                                    <input class="hp-inp" type="text" inputmode="numeric" data-money value="{{ number_format($d['remaining'], 0, ',', '.') }}" data-val="{{ number_format($d['remaining'], 0, ',', '.') }}">
-                                </td>
-                            @else
-                                <td class="num hp-cell empty-cell">&ndash;</td>
-                            @endif
-                        @endfor
                         <td class="num hp-cell hp-total-cell">
                             <span class="hp-amt hp-total-amt" title="Klik untuk ubah total">{{ rupiah($p['totalSisa']) }}</span>
                             <input class="hp-inp" type="text" inputmode="numeric" data-money value="{{ number_format($p['totalSisa'], 0, ',', '.') }}" data-val="{{ number_format($p['totalSisa'], 0, ',', '.') }}">
@@ -631,8 +619,8 @@ function hprSave(tr) {
         });
 }
 
-// — Edit inline rekap hutang pelanggan (grid Excel #hpSummaryTable): fetch ke
-//   route /pos/* (HutangPelangganController::adjustDebtCell/adjustTotalDebt/hapusLedgerEntry) —
+// — Edit inline rekap hutang pelanggan (#hpSummaryTable): fetch ke
+//   route /pos/* (HutangPelangganController::adjustTotalDebt/renameCustomer) —
 const HP_TX = @js($txDate);
 function hpPost(url, fields) {
     return fetch(url, {
@@ -640,43 +628,6 @@ function hpPost(url, fields) {
         headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || '' },
         body: new URLSearchParams(fields),
     }).then(res => res.json());
-}
-function hpSyncRow(tr, totalSisa) {
-    tr.dataset.total = totalSisa;
-    const cell = tr.querySelector('.hp-total-cell .hp-amt');
-    if (cell) cell.textContent = rupiahJs(totalSisa);
-    let sum = 0;
-    document.querySelectorAll('#hpSummaryTable tbody tr[data-total]').forEach(r => { sum += parseFloat(r.dataset.total) || 0; });
-    const grand = document.getElementById('hpGrandTotal');
-    if (grand) grand.textContent = rupiahJs(sum);
-}
-function hpCellInner(d) {
-    const v = moneyFmtJs(d.remaining);
-    return '<span class="hp-amt" title="Klik untuk edit — ' + d.date + '">' + rupiahJs(d.remaining) + '</span>'
-        + '<input class="hp-inp" type="text" inputmode="numeric" data-money value="' + v + '" data-val="' + v + '">';
-}
-function hpRenderCells(tr, debts) {
-    const tds = Array.from(tr.querySelectorAll('td.hp-cell')).filter(td => !td.classList.contains('hp-total-cell'));
-    if (debts.length > tds.length) { location.reload(); return false; }
-    tds.forEach((td, i) => {
-        const d = debts[i];
-        if (d) {
-            td.className = 'num hp-cell hp-debt-cell';
-            td.dataset.debtId = d.id;
-            td.innerHTML = hpCellInner(d);
-        } else {
-            td.className = 'num hp-cell empty-cell';
-            delete td.dataset.debtId;
-            td.innerHTML = '&ndash;';
-        }
-    });
-    return true;
-}
-function hpApply(tr, data) {
-    if (!data || !data.ok) return false;
-    const ok = hpRenderCells(tr, data.activeDebts || []);
-    if (ok) hpSyncRow(tr, data.totalSisa);
-    return ok;
 }
 function hpOpenInput(td) {
     const inp = td.querySelector('.hp-inp');
@@ -734,12 +685,6 @@ document.addEventListener('focusout', function (e) {
             .catch(() => { inp.value = old; if (window.posToast) posToast('Gagal mengubah total.'); });
         return;
     }
-    const id = td.dataset.debtId;
-    if (!id) return;
-    if (val === '') { inp.value = old; return; }
-    hpPost('/pos/hp/adjust-cell', { debt_id: id, new_remaining: (window.posMoney ? posMoney.digits(val) : val), tx_date: HP_TX })
-        .then(data => { if (!hpApply(td.closest('tr'), data) && window.posToast) posToast('Gagal menyimpan sel hutang.'); })
-        .catch(() => { if (window.posToast) posToast('Gagal menyimpan sel hutang.'); });
 });
 document.addEventListener('keydown', function (e) {
     const inp = e.target;

@@ -51,7 +51,6 @@ Route::prefix('pos')->name('pos.')->group(function () {
     Route::post('/hp', [HutangPelangganController::class, 'simpanHutangPelanggan'])->name('simpanHutangPelanggan');
     Route::post('/hp/{id}/hapus', [HutangPelangganController::class, 'hapusLedgerEntry'])->name('hapusLedgerEntry');
     Route::post('/hp/{name}/hapus-semua', [HutangPelangganController::class, 'hapusCustomerLedger'])->name('hapusCustomerLedger');
-    Route::post('/hp/adjust-cell', [HutangPelangganController::class, 'adjustDebtCell'])->name('adjustDebtCell');
     Route::post('/hp/adjust-total', [HutangPelangganController::class, 'adjustTotalDebt'])->name('adjustTotalDebt');
     Route::post('/hp/rename', [HutangPelangganController::class, 'renameCustomer'])->name('renameCustomer');
 

@@ -97,14 +97,10 @@ class PosController extends Controller
         $stockMgmtHolderNames = StockManagement::pluck('name')->unique()->sort()->values()->all();
 
         $hpProcessed = [];
-        $maxCols = 1;
         $hpGrandTotal = 0;
         foreach ($hpNames as $name) {
             $p = $this->hutang->processCustomerDebts($name, $txDate);
             $hpProcessed[$name] = $p;
-            if (count($p['activeDebts']) > $maxCols) {
-                $maxCols = count($p['activeDebts']);
-            }
             $hpGrandTotal += $p['totalSisa'];
         }
 
@@ -164,7 +160,7 @@ class PosController extends Controller
             'remainName', 'remainQty', 'remainPrice',
             'products', 'sales', 'dayExpenses',
             'oilStocks', 'stockMgmts', 'stockRemainings',
-            'hpNames', 'hpProcessed', 'hpGrandTotal', 'maxCols', 'hpEntries',
+            'hpNames', 'hpProcessed', 'hpGrandTotal', 'hpEntries',
             'personalLedgers', 'saldoLogs',
             'recapPerProduct', 'recapTotals', 'recapBulanPerProduct', 'recapBulanTotals',
             'allCustomerNames', 'stockMgmtHolderNames', 'ringkasanData',

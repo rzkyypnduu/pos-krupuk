@@ -108,9 +108,9 @@ class PaymentModalTest extends TestCase
         $this->assertSame(0, $proc['deposit']);
     }
 
-    public function test_debts_are_cut_newest_first_lifo(): void
+    public function test_total_sisa_is_plain_selisih_without_allocation(): void
     {
-        $name = 'Lifo_'.uniqid();
+        $name = 'Selisih_'.uniqid();
         CustomerLedger::create([
             'date' => '2026-09-28', 'name' => $name, 'amount' => 100000,
             'type' => 'tambah', 'note' => 'Hutang lama',
@@ -126,12 +126,7 @@ class PaymentModalTest extends TestCase
 
         $proc = $this->hutang()->processCustomerDebts($name);
 
-        // LIFO: 120rb dipotong dari hutang BARU (150rb) dulu → sisa 30rb; hutang lama utuh
-        $this->assertCount(2, $proc['activeDebts']);
-        $this->assertSame('2026-09-28', $proc['activeDebts'][0]['date']);
-        $this->assertSame(100000, $proc['activeDebts'][0]['remaining']);
-        $this->assertSame('2026-09-30', $proc['activeDebts'][1]['date']);
-        $this->assertSame(30000, $proc['activeDebts'][1]['remaining']);
+        // tanpa alokasi: total = Σ tambah − Σ bayar = 250rb − 120rb = 130rb
         $this->assertSame(130000, $proc['totalSisa']);
         $this->assertSame(0, $proc['deposit']);
     }
