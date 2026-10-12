@@ -116,9 +116,10 @@
         }
         var kb = row.querySelector('[data-pay-kbadge]');
         if (kb) {
-            var show = !!state.kemarin[id] && (r.paid_kemarin || 0) > 0;
+            // badge tampil selama ceklis aktif, berapa pun nilainya (termasuk Rp0)
+            var show = !!state.kemarin[id];
             kb.classList.toggle('d-none', !show);
-            if (show) kb.textContent = 'Bayar kemarin ' + rp(r.paid_kemarin);
+            if (show) kb.textContent = 'Bayar kemarin ' + rp(r.paid_kemarin || 0);
         }
         var ck = row.querySelector('[data-pay-ck]');
         if (ck) ck.checked = !!state.kemarin[id];
