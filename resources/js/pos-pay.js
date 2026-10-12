@@ -160,7 +160,6 @@
         var debts = s ? (s.debts || []) : [];
         debts.forEach(function (d, i) {
             var li = document.createElement('li');
-            if (i === 0) li.className = 'last';
             var date = document.createElement('span');
             date.className = 'pd-date';
             date.textContent = d.date;
