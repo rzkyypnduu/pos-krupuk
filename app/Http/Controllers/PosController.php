@@ -13,6 +13,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockManagement;
 use App\Models\StockRemaining;
+use Illuminate\Support\Carbon;
 use App\Services\HasilSheetService;
 use App\Services\HutangService;
 use Illuminate\Http\Request;
@@ -196,12 +197,12 @@ class PosController extends Controller
             ->selectRaw('date, SUM(paid) AS paid, SUM(paid_kemarin) AS paid_kemarin')
             ->groupBy('date')
             ->get()
-            ->keyBy(fn ($r) => $r->date->format('Y-m-d'));
+            ->keyBy(fn ($r) => Carbon::parse($r->date)->format('Y-m-d'));
         $pengeluaranPerHari = Expense::whereBetween('date', [$mStart, $mEnd])
             ->selectRaw('date, SUM(amount) AS total')
             ->groupBy('date')
             ->get()
-            ->keyBy(fn ($r) => $r->date->format('Y-m-d'));
+            ->keyBy(fn ($r) => Carbon::parse($r->date)->format('Y-m-d'));
 
         $grafikHarian = [];
         $cursor = \DateTimeImmutable::createFromFormat('Y-m-d', $mStart);
