@@ -7,6 +7,7 @@ use App\Models\OilStock;
 use App\Models\StockManagement;
 use App\Models\StockRemaining;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 /**
  * Input tab Hasil selain hutang: stok minyak (1 nilai per tanggal),
@@ -108,7 +109,7 @@ class StokHasilController extends Controller
             'qty' => $total,
             'batches' => [[
                 'id' => $row->batches[0]['id'] ?? uniqid(),
-                'date' => $row->date->toDateString(),
+                'date' => Carbon::parse($row->date)->toDateString(),
                 'price' => $price,
                 'sacks' => $sacks,
             ]],

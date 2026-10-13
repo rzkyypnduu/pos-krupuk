@@ -197,7 +197,7 @@ class TransaksiController extends Controller
         $params = $this->makeQueryParams($request, [
             'tab' => 'transaksi',
             'editing' => $saleId,
-            'tx_date' => $sale->date->format('Y-m-d'),
+            'tx_date' => Carbon::parse($sale->date)->format('Y-m-d'),
             'tx_name' => $sale->name,
             'tx_note' => $sale->note ?? '',
             // transaksi tanpa tagihan (bayar hutang): pertahankan nilai paid lama supaya tetap bisa disimpan ulang;
