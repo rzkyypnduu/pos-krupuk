@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CustomerLedger;
 use App\Models\Sale;
+use Illuminate\Support\Carbon;
 
 /**
  * Perhitungan sisa hutang pelanggan untuk tab Hasil (rekap & detail).
@@ -25,7 +26,7 @@ class HutangService
         $deposit = 0;
         foreach ($entries as $l) {
             if ($l->type === 'tambah') {
-                $debts[] = ['id' => $l->id, 'amount' => $l->amount, 'remaining' => $l->amount, 'date' => $l->date->format('Y-m-d')];
+                $debts[] = ['id' => $l->id, 'amount' => $l->amount, 'remaining' => $l->amount, 'date' => Carbon::parse($l->date)->format('Y-m-d')];
             } else {
                 // pecahan hutang: pembayaran memotong hutang TERBARU dulu (dari akhir daftar),
                 // baru ke yang lebih lama — sejajar preview tick di modal Bayar
@@ -59,7 +60,7 @@ class HutangService
             $running += $l->type === 'tambah' ? $l->amount : -$l->amount;
 
             return (object) [
-                'id' => $l->id, 'date' => $l->date->format('Y-m-d'),
+                'id' => $l->id, 'date' => Carbon::parse($l->date)->format('Y-m-d'),
                 'type' => $l->type, 'amount' => $l->amount, 'running' => $running,
                 'note' => $l->note, 'sale_id' => $l->sale_id,
                 'paid' => $l->sale_id && isset($sales[$l->sale_id]) ? $sales[$l->sale_id]->paid : null,
