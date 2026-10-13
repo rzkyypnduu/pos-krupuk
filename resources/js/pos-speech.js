@@ -302,9 +302,11 @@
         status('Teks suara dibersihkan — data di form tidak berubah.', '');
     }
 
-    /** Hapus: buang teks suara + kosongkan semua jumlah produk di form. */
+    /** Hapus: buang teks suara + kosongkan nama pelanggan & semua jumlah produk di form. */
     function clearAll() {
         resetVoiceText();
+        var nameInp = document.getElementById('txName');
+        if (nameInp) nameInp.value = '';
         if (form) {
             form.querySelectorAll('[data-product-id]').forEach(function (input) {
                 input.value = '';
