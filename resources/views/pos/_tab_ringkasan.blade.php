@@ -98,15 +98,17 @@
     <div class="card">
         <h2>Kelola data</h2>
         @error('bulan') <div class="field-error" style="margin-bottom:10px;">{{ $message }}</div> @enderror
-        <form method="POST" action="{{ route('pos.resetMonth') }}" style="display:inline;" data-confirm="Hapus semua data bulan {{ $monthLabel }}? Tindakan ini tidak bisa dibatalkan.">
-            @csrf
-            <input type="hidden" name="bulan" value="{{ $activeMonth }}">
-            <button type="submit" class="btn btn-outline-danger">Hapus data bulan ini saja</button>
-        </form>
-        <form method="POST" action="{{ route('pos.resetAll') }}" style="display:inline;" data-confirm="Yakin hapus SEMUA data POS (semua bulan)? Tindakan ini tidak bisa dibatalkan.">
-            @csrf
-            <button type="submit" class="btn btn-outline-danger" style="margin-left:8px;">Hapus SEMUA data (semua bulan)</button>
-        </form>
+        <div class="btn-inline">
+            <form method="POST" action="{{ route('pos.resetMonth') }}" data-confirm="Hapus semua data bulan {{ $monthLabel }}? Tindakan ini tidak bisa dibatalkan.">
+                @csrf
+                <input type="hidden" name="bulan" value="{{ $activeMonth }}">
+                <button type="submit" class="btn btn-outline-danger">Hapus data bulan ini saja</button>
+            </form>
+            <form method="POST" action="{{ route('pos.resetAll') }}" data-confirm="Yakin hapus SEMUA data POS (semua bulan)? Tindakan ini tidak bisa dibatalkan.">
+                @csrf
+                <button type="submit" class="btn btn-outline-danger">Hapus SEMUA data (semua bulan)</button>
+            </form>
+        </div>
     </div>
 
     <script>

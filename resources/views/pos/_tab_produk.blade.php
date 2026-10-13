@@ -14,11 +14,13 @@
                 <input type="text" inputmode="numeric" id="prodPrice" name="prodPrice" data-money min="0" placeholder="0">
             </div>
         </div>
-        <button type="submit" class="btn btn-primary">Tambah produk</button>
+        <div class="btn-inline">
+            <button type="submit" class="btn btn-primary">Tambah produk</button>
+        </div>
     </form>
-    <form method="POST" action="{{ route('pos.seedProduk') }}" style="display:inline; margin-top:8px;">
+    <form method="POST" action="{{ route('pos.seedProduk') }}" class="btn-inline-form">
         @csrf
-        <button type="submit" class="btn btn-outline-secondary" style="margin-left:8px;">Isi contoh nama produk dari catatan</button>
+        <button type="submit" class="btn btn-outline-secondary">Isi contoh nama produk</button>
     </form>
 </div>
 
@@ -26,13 +28,13 @@
 <div class="card">
     <h2>Daftar produk</h2>
     <div class="table-wrap">
-        <table>
-            <thead><tr><th>Nama</th><th class="num">Harga / kg</th><th></th></tr></thead>
+        <table class="prod-table">
+            <thead><tr><th class="center">Nama</th><th class="center">Harga / kg</th><th></th></tr></thead>
             <tbody>
                 @forelse ($products as $p)
                     <tr>
-                        <td>{{ $p->name }}</td>
-                        <td class="num">{!! $p->price ? rupiah($p->price) : '<span class="warn-price">belum diatur</span>' !!}</td>
+                        <td class="center">{{ $p->name }}</td>
+                        <td class="center">{!! $p->price ? rupiah($p->price) : '<span class="warn-price">belum diatur</span>' !!}</td>
                         <td>
                             <div class="row-actions">
                                 <div data-edit-view="{{ $p->id }}">
