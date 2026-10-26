@@ -1,35 +1,35 @@
-{{-- Bagian 1: payload window.POS_PAY (data transaksi + sisa hutang) — dibaca
-     resources/js/pos-pay.js (bundle Vite) untuk mengisi modal Bayar.
+{{-- Payload window.POS_PAY (data transaksi + sisa hutang) dibaca
+     resources/js/pos/pembayaran.js untuk mengisi modal Bayar.
      Modal memakai Bootstrap Modal (window.bootstrap). --}}
 @php
-    // payload utk modal bayar: data tiap transaksi hari ini + sisa hutang pelanggan (dari sumber sama dgn tab hasil)
-    $payPayload = [];
-    foreach ($sales as $s) {
-        $p = $hpProcessed[$s->name] ?? null;
-        $debtsDesc = array_values(array_reverse($p['activeDebts'] ?? [])); // terbaru -> terlama
-        $payPayload[$s->id] = [
-            'name' => $s->name,
-            'date' => $s->date->format('Y-m-d'),
-            'total' => (int) $s->rounded_total,
-            'paid' => (int) $s->paid,
-            'paid_kemarin' => (int) $s->paid_kemarin,
-            'kemarin_active' => (bool) $s->kemarin_active,
-            'debts' => array_map(fn ($d) => [
-                'id' => $d['id'],
-                'date' => $d['date'],
-                'amount' => (int) $d['amount'],
-                'remaining' => (int) $d['remaining'],
-            ], $debtsDesc),
+    // Payload modal bayar: data tiap transaksi hari ini + sisa hutang pelanggan
+    // (sumber sama dengan tab Hasil).
+    $muatanPembayaran = [];
+    foreach ($daftarPenjualan as $penjualan) {
+        $dataHutangPelanggan = $hutangPelangganDiproses[$penjualan->nama] ?? null;
+        $hutangTerurut = array_values(array_reverse($dataHutangPelanggan['activeDebts'] ?? [])); // terbaru ke terlama
+        $muatanPembayaran[$penjualan->id] = [
+            'name' => $penjualan->nama,
+            'date' => $penjualan->tanggal->format('Y-m-d'),
+            'total' => (int) $penjualan->total_dibulatkan,
+            'paid' => (int) $penjualan->dibayar,
+            'paid_kemarin' => (int) $penjualan->dibayar_kemarin,
+            'kemarin_active' => (bool) $penjualan->kemarin_aktif,
+            'debts' => array_map(fn ($dataHutangAktif) => [
+                'id' => $dataHutangAktif['id'],
+                'date' => $dataHutangAktif['date'],
+                'amount' => (int) $dataHutangAktif['amount'],
+                'remaining' => (int) $dataHutangAktif['remaining'],
+            ], $hutangTerurut),
         ];
     }
 @endphp
 <script>
-    window.POS_PAY = {!! json_encode($payPayload, JSON_UNESCAPED_SLASHES) !!};
+    window.POS_PAY = {{ Illuminate\Support\Js::from($muatanPembayaran) }};
     window.POS_BAYAR_URL = @js(url('/pos/transaksi'));
 </script>
 
-{{-- Bagian 2: markup modal Bayar (Bootstrap modal; nilai & daftar hutang di-render
-     pos-pay.js saat dibuka — tanpa Alpine). --}}
+{{-- Markup modal Bayar; nilai dan daftar hutang diisi pembayaran.js saat dibuka. --}}
 <div class="modal fade" id="payModal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="payModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">

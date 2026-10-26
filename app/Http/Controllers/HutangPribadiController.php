@@ -2,57 +2,57 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\PosHelpers;
-use App\Models\PersonalLedger;
+use App\Http\Controllers\Concerns\BantuanPos;
+use App\Models\BukuPribadi;
 use Illuminate\Http\Request;
 
 /** Daftar hutang pribadi (tab Hasil) — CRUD + edit inline mode Excel. */
 class HutangPribadiController extends Controller
 {
-    use PosHelpers;
+    use BantuanPos;
 
     public function simpanHutangPribadi(Request $request)
     {
         // "15.000" dinormalisasi ke 15000; nilai bukan angka tetap ditolak validasi.
-        $amt = $request->input('hprAmount');
-        if (is_string($amt) && preg_match('/^[\d.\s]+$/', trim($amt))) {
-            $request->merge(['hprAmount' => parseRupiah($amt)]);
+        $jumlah = $request->input('hprAmount');
+        if (is_string($jumlah) && preg_match('/^[\d.\s]+$/', trim($jumlah))) {
+            $request->merge(['hprAmount' => uraiRupiah($jumlah)]);
         }
         $request->validate([
             'hprName' => 'required|string|max:255',
             'hprAmount' => 'required|integer|min:1',
         ], ['hprName.required' => 'Isi nama dulu.', 'hprAmount.required' => 'Isi jumlah dulu.']);
-        PersonalLedger::create([
-            'date' => $this->activeDate($request),
-            'name' => $request->input('hprName'),
-            'amount' => $request->input('hprAmount'),
+        BukuPribadi::create([
+            'tanggal' => $this->tanggalAktif($request),
+            'nama' => $request->input('hprName'),
+            'jumlah' => $request->input('hprAmount'),
         ]);
 
-        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Hutang pribadi dicatat.');
+        return $this->alihkanKePos($request, ['tab' => 'hasil'], 'Hutang pribadi dicatat.');
     }
 
-    public function hapusPersonalLedger(Request $request, int $id)
+    public function hapusBukuPribadi(Request $request, int $id)
     {
-        PersonalLedger::where('id', $id)->delete();
+        BukuPribadi::where('id', $id)->delete();
 
         return back()->with('success', 'Hutang pribadi dihapus.');
     }
 
     /** Simpan edit inline (mode Excel) untuk satu baris hutang pribadi. */
-    public function updatePersonalLedger(Request $request, int $id)
+    public function perbaruiBukuPribadi(Request $request, int $id)
     {
-        $row = PersonalLedger::find($id);
-        if (! $row) {
+        $baris = BukuPribadi::find($id);
+        if (! $baris) {
             return response()->json(['ok' => false, 'message' => 'Data tidak ditemukan.'], 404);
         }
-        $name = trim((string) $request->input('name', ''));
-        if ($name !== '') {
-            $row->name = $name;
+        $nama = trim((string) $request->input('name', ''));
+        if ($nama !== '') {
+            $baris->nama = $nama;
         }
-        // parseRupiah: "15.000" -> 15000 (parseDecimal lama salah baca titik jadi desimal)
-        $row->amount = max(0, parseRupiah($request->input('amount')));
-        $row->save();
+        // uraiRupiah: "15.000" -> 15000 (uraiDesimal lama salah baca titik jadi desimal)
+        $baris->jumlah = max(0, uraiRupiah($request->input('amount')));
+        $baris->save();
 
-        return response()->json(['ok' => true, 'name' => $row->name, 'amount' => $row->amount]);
+        return response()->json(['ok' => true, 'name' => $baris->nama, 'amount' => $baris->jumlah]);
     }
 }

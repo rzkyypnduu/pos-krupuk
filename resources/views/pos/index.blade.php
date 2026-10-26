@@ -12,14 +12,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 
-    {{-- @vite memuat Bootstrap (tema krupuk via app.scss + pos.scss) dan seluruh
-         JS POS (window.bootstrap.Modal/Collapse/Toast, pos-ui, pos-pay, pos-scroll,
-         grafik Ringkasan) sebagai satu bundle. --}}
+    {{-- @vite memuat Bootstrap (tema krupuk via app.scss + pos.scss) dan modul POS.
+         Grafik Ringkasan dimuat terpisah saat tab Ringkasan dibuka. --}}
     @vite(['resources/css/app.scss', 'resources/js/app.js'])
 </head>
 <body>
 <div id="pos-root">
-    {{-- Kontainer notifikasi toast (posToast di pos-ui.js) --}}
+    {{-- Kontainer notifikasi toast (posToast di antarmuka.js) --}}
     <div class="toast-container position-fixed top-0 end-0 p-3" id="posToastHost" style="z-index:1090;"></div>
 
     @if(session('success'))
@@ -30,32 +29,32 @@
     @endif
 
     @php
-        $baseParams = ['bulan' => $activeMonth, 'tx_date' => $txDate];
+        $parameterDasar = ['bulan' => $bulanAktif, 'tx_date' => $tanggalTransaksi];
     @endphp
 
     <nav class="pos-nav">
-        <a href="{{ route('pos', $baseParams) }}" class="pos-brand" title="UD Krupuk Lancar">
+        <a href="{{ route('pos', $parameterDasar) }}" class="pos-brand" title="UD Krupuk Lancar">
             <img src="{{ asset('img/logo-180.png') }}" alt="" class="pos-brand-logo" width="40" height="40">
             <span class="pos-brand-text">
                 <span class="pos-brand-name">UD Krupuk Lancar</span>
-                <span class="pos-brand-sub">Point of Sale</span>
+                <span class="pos-brand-sub">Point of Penjualan</span>
             </span>
         </a>
         <div class="tabs">
-            <a href="{{ route('pos', array_merge($baseParams, ['tab' => 'transaksi'])) }}" class="tab-btn {{ $tab === 'transaksi' ? 'active' : '' }}">Transaksi</a>
-            <a href="{{ route('pos', array_merge($baseParams, ['tab' => 'produk'])) }}" class="tab-btn {{ $tab === 'produk' ? 'active' : '' }}">Produk</a>
-            <a href="{{ route('pos', array_merge($baseParams, ['tab' => 'hasil'])) }}" class="tab-btn {{ $tab === 'hasil' ? 'active' : '' }}">Hasil</a>
-            <a href="{{ route('pos', array_merge($baseParams, ['tab' => 'ringkasan'])) }}" class="tab-btn {{ $tab === 'ringkasan' ? 'active' : '' }}">Ringkasan</a>
+            <a href="{{ route('pos', array_merge($parameterDasar, ['tab' => 'transaksi'])) }}" class="tab-btn {{ $tabAktif === 'transaksi' ? 'active' : '' }}">Transaksi</a>
+            <a href="{{ route('pos', array_merge($parameterDasar, ['tab' => 'produk'])) }}" class="tab-btn {{ $tabAktif === 'produk' ? 'active' : '' }}">Produk</a>
+            <a href="{{ route('pos', array_merge($parameterDasar, ['tab' => 'hasil'])) }}" class="tab-btn {{ $tabAktif === 'hasil' ? 'active' : '' }}">Hasil</a>
+            <a href="{{ route('pos', array_merge($parameterDasar, ['tab' => 'ringkasan'])) }}" class="tab-btn {{ $tabAktif === 'ringkasan' ? 'active' : '' }}">Ringkasan</a>
         </div>
         <div class="date-switch">
-            <input type="date" value="{{ $txDate }}"
+            <input type="date" value="{{ $tanggalTransaksi }}"
                    title="Tanggal aktif — semua tab mengikuti tanggal ini"
-                   onchange="window.location.href='{{ route('pos', ['tab' => $tab]) }}&tx_date=' + this.value">
+                   onchange="window.location.href='{{ route('pos', ['tab' => $tabAktif]) }}&tx_date=' + this.value">
         </div>
     </nav>
 
     <datalist id="customerNames">
-        @foreach ($allCustomerNames as $n)
+        @foreach ($semuaNamaPelanggan as $n)
             <option value="{{ $n }}"></option>
         @endforeach
     </datalist>
@@ -63,19 +62,19 @@
     <main>
         {{-- Semua panel selalu dirender; yang aktif ditandai kelas .active (gaya: pos.scss
              Bagian "tipografi, switch tanggal, navigasi tab, panel"). Sisipkan sesuai urutan tab. --}}
-        <div class="tab-panel {{ $tab === 'transaksi' ? 'active' : '' }}" id="tab-transaksi">
+        <div class="tab-panel {{ $tabAktif === 'transaksi' ? 'active' : '' }}" id="tab-transaksi">
             @include('pos._tab_transaksi')
         </div>
 
-        <div class="tab-panel {{ $tab === 'produk' ? 'active' : '' }}" id="tab-produk">
+        <div class="tab-panel {{ $tabAktif === 'produk' ? 'active' : '' }}" id="tab-produk">
             @include('pos._tab_produk')
         </div>
 
-        <div class="tab-panel {{ $tab === 'hasil' ? 'active' : '' }}" id="tab-hasil">
+        <div class="tab-panel {{ $tabAktif === 'hasil' ? 'active' : '' }}" id="tab-hasil">
             @include('pos._tab_hasil')
         </div>
 
-        <div class="tab-panel {{ $tab === 'ringkasan' ? 'active' : '' }}">
+        <div class="tab-panel {{ $tabAktif === 'ringkasan' ? 'active' : '' }}">
             @include('pos._tab_ringkasan')
         </div>
     </main>

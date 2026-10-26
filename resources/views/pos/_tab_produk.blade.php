@@ -31,24 +31,24 @@
         <table class="prod-table">
             <thead><tr><th class="center">Nama</th><th class="center">Harga / kg</th><th></th></tr></thead>
             <tbody>
-                @forelse ($products as $p)
+                @forelse ($daftarProduk as $produk)
                     <tr>
-                        <td class="center">{{ $p->name }}</td>
-                        <td class="center">{!! $p->price ? rupiah($p->price) : '<span class="warn-price">belum diatur</span>' !!}</td>
+                        <td class="center">{{ $produk->nama }}</td>
+                        <td class="center">{!! $produk->harga ? rupiah($produk->harga) : '<span class="warn-price">belum diatur</span>' !!}</td>
                         <td>
                             <div class="row-actions">
-                                <div data-edit-view="{{ $p->id }}">
-                                    <button type="button" class="btn btn-outline-secondary" data-edit-show="{{ $p->id }}">Ubah harga</button>
+                                <div data-edit-view="{{ $produk->id }}">
+                                    <button type="button" class="btn btn-outline-secondary" data-edit-show="{{ $produk->id }}">Ubah harga</button>
                                 </div>
-                                <div data-edit-form="{{ $p->id }}" class="{{ $errors->has('price') ? '' : 'd-none' }}" style="display:flex;gap:6px;align-items:center;">
-                                    <form method="POST" action="{{ route('pos.ubahHarga', $p->id) }}" style="display:flex;gap:6px;align-items:center;">
+                                <div data-edit-form="{{ $produk->id }}" class="{{ $errors->has('price') ? '' : 'd-none' }}" style="display:flex;gap:6px;align-items:center;">
+                                    <form method="POST" action="{{ route('pos.ubahHarga', $produk->id) }}" style="display:flex;gap:6px;align-items:center;">
                                         @csrf
-                                        <input type="text" inputmode="numeric" name="price" data-money value="{{ old('price', $p->price) }}" min="0" style="width:130px;padding:8px 10px;font-size:15px;">@error('price') <div class="field-error">{{ $message }}</div> @enderror
+                                        <input type="text" inputmode="numeric" name="price" data-money value="{{ old('price', $produk->harga) }}" min="0" style="width:130px;padding:8px 10px;font-size:15px;">@error('price') <div class="field-error">{{ $message }}</div> @enderror
                                         <button type="submit" class="btn btn-primary" style="padding:8px 14px;font-size:14px;">OK</button>
                                     </form>
-                                    <button type="button" class="btn btn-outline-secondary" data-edit-hide="{{ $p->id }}" style="padding:8px 14px;font-size:14px;">Batal</button>
+                                    <button type="button" class="btn btn-outline-secondary" data-edit-hide="{{ $produk->id }}" style="padding:8px 14px;font-size:14px;">Batal</button>
                                 </div>
-                                <form method="POST" action="{{ route('pos.hapusProduk', $p->id) }}" style="display:inline;" data-confirm="Hapus produk {{ $p->name }}?">
+                                <form method="POST" action="{{ route('pos.hapusProduk', $produk->id) }}" style="display:inline;" data-confirm="Hapus produk {{ $produk->nama }}?">
                                     @csrf
                                     <button type="submit" class="btn btn-outline-danger">Hapus</button>
                                 </form>

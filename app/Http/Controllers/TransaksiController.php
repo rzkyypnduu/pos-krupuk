@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\PosHelpers;
-use App\Models\Expense;
-use App\Models\InputLog;
-use App\Models\Product;
-use App\Models\Sale;
-use App\Models\SaleItem;
+use App\Http\Controllers\Concerns\BantuanPos;
+use App\Models\CatatanInput;
+use App\Models\ItemPenjualan;
+use App\Models\Pengeluaran;
+use App\Models\Penjualan;
+use App\Models\Produk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  */
 class TransaksiController extends Controller
 {
-    use PosHelpers;
+    use BantuanPos;
 
     public function simpanTransaksi(Request $request)
     {
@@ -29,122 +29,122 @@ class TransaksiController extends Controller
             'txDate' => 'required|date',
         ], ['txName.required' => 'Isi nama pelanggan dulu.']);
 
-        $qtyInputs = $request->input('qty', []);
-        if (! is_array($qtyInputs)) {
-            $qtyInputs = [];
+        $inputJumlah = $request->input('qty', []);
+        if (! is_array($inputJumlah)) {
+            $inputJumlah = [];
         }
-        $items = [];
-        foreach ($qtyInputs as $productId => $qty) {
-            $qty = static::parseDecimal($qty);
-            if ($qty !== null && $qty > 0) {
-                $product = Product::find($productId);
-                if ($product) {
-                    $items[] = ['product' => $product, 'qty' => $qty];
+        $daftarItem = [];
+        foreach ($inputJumlah as $productId => $jumlah) {
+            $jumlah = static::uraiDesimal($jumlah);
+            if ($jumlah !== null && $jumlah > 0) {
+                $produk = Produk::find($productId);
+                if ($produk) {
+                    $daftarItem[] = ['product' => $produk, 'qty' => $jumlah];
                 }
             }
         }
 
-        // Edit transaksi yang ID-nya sudah tidak ada (mis. dihapus tab lain) harus
-        // ditolak SEBELUM transaksi — kalau tidak, user tetap dapat pesan "berhasil"
-        // padahal tidak ada data tersimpan.
-        $editingId = $request->input('editing_sale_id');
-        if ($editingId && ! Sale::whereKey($editingId)->exists()) {
+        // ID transaksi yang diedit harus masih ada sebelum transaksi disimpan.
+        // Tanpa pemeriksaan ini, pengguna bisa menerima pesan "berhasil" padahal
+        // tidak ada data yang tersimpan.
+        $idDiedit = $request->input('editing_sale_id');
+        if ($idDiedit && ! Penjualan::whereKey($idDiedit)->exists()) {
             return back()->withErrors([
                 'editing_sale_id' => 'Transaksi yang diedit sudah tidak ditemukan (mungkin sudah dihapus). Muat ulang halaman lalu coba lagi.',
             ]);
         }
 
-        $rawTotal = (int) round(array_sum(array_map(fn ($i) => $i['qty'] * $i['product']->price, $items)));
-        $roundedTotal = static::roundTotal($rawTotal);
-        $paidTouched = $request->input('tx_paid_touched', 0);
-        $paidVal = $request->input('tx_paid');
-        $paid = $paidTouched ? parseRupiah($paidVal) : 0;
+        $totalKotor = (int) round(array_sum(array_map(fn ($i) => $i['qty'] * $i['product']->harga, $daftarItem)));
+        $totalDibulatkan = static::bulatkanTotal($totalKotor);
+        $dibayarDisentuh = $request->input('tx_paid_touched', 0);
+        $nilaiDibayar = $request->input('tx_paid');
+        $dibayar = $dibayarDisentuh ? uraiRupiah($nilaiDibayar) : 0;
 
         // tanpa produk diizinkan asalkan kolom Dibayar diisi (kasus: hari ini hanya bayar hutang)
-        if (empty($items) && $paid <= 0) {
+        if (empty($daftarItem) && $dibayar <= 0) {
             return back()->withErrors([
                 'txQty' => 'Isi jumlah minimal satu produk atau isi kolom Dibayar (untuk pembayaran hutang tanpa transaksi).',
             ])->withInput();
         }
 
-        $diff = $roundedTotal - $paid;
-        $date = $request->input('txDate');
-        $name = trim((string) ($request->input('txName') ?? ''));
+        $selisih = $totalDibulatkan - $dibayar;
+        $tanggal = $request->input('txDate');
+        $nama = trim((string) ($request->input('txName') ?? ''));
         // middleware ConvertEmptyStringsToNull mengubah input kosong menjadi null
-        $note = (string) ($request->input('tx_note') ?? '');
+        $catatan = (string) ($request->input('tx_note') ?? '');
 
-        $saleId = 0;
-        DB::transaction(function () use (&$saleId, $items, $rawTotal, $roundedTotal, $paid, $diff, $date, $name, $note, $request) {
-            $paidKemarin = 0;
-            $editingId = $request->input('editing_sale_id');
-            if ($editingId) {
-                $sale = Sale::find($editingId);
-                if (! $sale) {
+        $idPenjualan = 0;
+        DB::transaction(function () use (&$idPenjualan, $daftarItem, $totalKotor, $totalDibulatkan, $dibayar, $selisih, $tanggal, $nama, $catatan, $request) {
+            $dibayarKemarin = 0;
+            $idDiedit = $request->input('editing_sale_id');
+            if ($idDiedit) {
+                $penjualan = Penjualan::find($idDiedit);
+                if (! $penjualan) {
                     return;
                 }
-                $paidKemarin = (int) $sale->paid_kemarin;
-                $sale->update([
-                    'date' => $date, 'name' => $name, 'raw_total' => $rawTotal,
-                    'rounded_total' => $roundedTotal, 'paid' => $paid, 'diff' => $diff,
-                    'note' => $note ?: null,
+                $dibayarKemarin = (int) $penjualan->dibayar_kemarin;
+                $penjualan->update([
+                    'tanggal' => $tanggal, 'nama' => $nama, 'total_kotor' => $totalKotor,
+                    'total_dibulatkan' => $totalDibulatkan, 'dibayar' => $dibayar, 'selisih' => $selisih,
+                    'catatan' => $catatan ?: null,
                     // edit tidak menurunkan status abu yang sudah di-set lewat modal Bayar
-                    'is_paid_btn_clicked' => $sale->is_paid_btn_clicked || $paid > 0 || $paidKemarin > 0,
+                    'tombol_bayar_diklik' => $penjualan->tombol_bayar_diklik || $dibayar > 0 || $dibayarKemarin > 0,
                 ]);
-                SaleItem::where('sale_id', $sale->id)->delete();
+                ItemPenjualan::where('penjualan_id', $penjualan->id)->delete();
             } else {
-                $sale = Sale::create([
-                    'date' => $date, 'name' => $name, 'raw_total' => $rawTotal,
-                    'rounded_total' => $roundedTotal, 'paid' => $paid, 'diff' => $diff,
-                    'note' => $note ?: null, 'is_paid_btn_clicked' => $paid > 0,
+                $penjualan = Penjualan::create([
+                    'tanggal' => $tanggal, 'nama' => $nama, 'total_kotor' => $totalKotor,
+                    'total_dibulatkan' => $totalDibulatkan, 'dibayar' => $dibayar, 'selisih' => $selisih,
+                    'catatan' => $catatan ?: null, 'tombol_bayar_diklik' => $dibayar > 0,
                 ]);
             }
 
-            $saleId = $sale->id;
+            $idPenjualan = $penjualan->id;
 
-            foreach ($items as $item) {
-                SaleItem::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $item['product']->id,
-                    'name' => $item['product']->name,
-                    'qty' => $item['qty'],
-                    'price' => $item['product']->price,
+            foreach ($daftarItem as $itemPenjualan) {
+                ItemPenjualan::create([
+                    'penjualan_id' => $penjualan->id,
+                    'produk_id' => $itemPenjualan['product']->id,
+                    'nama' => $itemPenjualan['product']->nama,
+                    'jumlah' => $itemPenjualan['qty'],
+                    'harga' => $itemPenjualan['product']->harga,
                 ]);
             }
             // (aturan "transaksi tidak menulis customer_ledgers" ada di docblock kelas)
         });
 
-        $this->logInput($request, $saleId, $name, $note, $items, $roundedTotal, $paid);
+        $this->catatInput($request, $idPenjualan, $nama, $catatan, $daftarItem, $totalDibulatkan, $dibayar);
 
         // sukses: tutup form Transaksi Baru (buang query new/editing dari URL tujuan)
-        return $this->redirectToPos($request, [
-            'tab' => 'transaksi', 'tx_date' => $date, 'new' => null, 'editing' => null,
+        return $this->alihkanKePos($request, [
+            'tab' => 'transaksi', 'tx_date' => $tanggal, 'new' => null, 'editing' => null,
         ], 'Transaksi berhasil disimpan.');
     }
 
     /**
      * Bayar lunas satu transaksi (set paid = total, diff = 0, ditandai selesai).
-     * Tidak punya route sendiri — dipanggil internal oleh bayarModal saat 'lunas'.
+     * Tidak punya route sendiri — dipanggil internal oleh bayarLewatModal saat 'lunas'.
      */
-    public function bayarPas(Request $request, int $saleId)
+    public function bayarLunas(Request $request, int $idPenjualan)
     {
-        $sale = Sale::find($saleId);
-        if (! $sale) {
+        $penjualan = Penjualan::find($idPenjualan);
+        if (! $penjualan) {
             return back()->with('error', 'Transaksi tidak ditemukan.');
         }
-        if ($sale->rounded_total <= 0) {
+        if ($penjualan->total_dibulatkan <= 0) {
             return back()->with('error', 'Transaksi ini tanpa tagihan — gunakan form Bayar.');
         }
 
-        DB::transaction(function () use ($sale) {
-            $sale->update([
-                'paid' => $sale->rounded_total,
-                'diff' => 0,
-                'is_paid_btn_clicked' => true,
+        DB::transaction(function () use ($penjualan) {
+            $penjualan->update([
+                'dibayar' => $penjualan->total_dibulatkan,
+                'selisih' => 0,
+                'tombol_bayar_diklik' => true,
             ]);
             // (aturan "pembayaran tidak menulis customer_ledgers" ada di docblock kelas)
         });
 
-        return $this->redirectToPos($request, ['tab' => 'transaksi'], 'Pembayaran lunas.');
+        return $this->alihkanKePos($request, ['tab' => 'transaksi'], 'Pembayaran lunas.');
     }
 
     /**
@@ -156,61 +156,61 @@ class TransaksiController extends Controller
      *   jadi uangnya pindah alokasi, tidak hilang (Dibayar & Diterima tetap).
      * Isian 0 diperbolehkan (mungkin memang belum bayar sama sekali).
      */
-    public function bayarModal(Request $request, int $saleId)
+    public function bayarLewatModal(Request $request, int $idPenjualan)
     {
-        $sale = Sale::find($saleId);
-        if (! $sale) {
+        $penjualan = Penjualan::find($idPenjualan);
+        if (! $penjualan) {
             return back()->with('error', 'Transaksi tidak ditemukan.');
         }
 
         if ($request->input('lunas')) {
-            return $this->bayarPas($request, $saleId);
+            return $this->bayarLunas($request, $idPenjualan);
         }
 
-        $parseAmount = fn ($key) => parseRupiah($request->input($key, '0'));
+        $parseAmount = fn ($kunci) => uraiRupiah($request->input($kunci, '0'));
         $pakaiKemarin = (bool) $request->input('pakai_kemarin');
         $payKemarin = $pakaiKemarin ? $parseAmount('bayar_kemarin') : 0;
         $payHariIni = $parseAmount('bayar_hari_ini');
 
-        DB::transaction(function () use ($sale, $pakaiKemarin, $payKemarin, $payHariIni) {
-            $sale->update([
-                'paid' => $payHariIni,
-                'diff' => $sale->rounded_total - $payHariIni,
-                'paid_kemarin' => $pakaiKemarin ? $payKemarin : 0,
-                'kemarin_active' => $pakaiKemarin,
+        DB::transaction(function () use ($penjualan, $pakaiKemarin, $payKemarin, $payHariIni) {
+            $penjualan->update([
+                'dibayar' => $payHariIni,
+                'selisih' => $penjualan->total_dibulatkan - $payHariIni,
+                'dibayar_kemarin' => $pakaiKemarin ? $payKemarin : 0,
+                'kemarin_aktif' => $pakaiKemarin,
                 // tombol Bayar dipencet = ditandai selesai (abu), termasuk nominal 0/kosong:
                 // anggapannya transaksi selesai & hari ini memang tidak bayar sama sekali
-                'is_paid_btn_clicked' => true,
+                'tombol_bayar_diklik' => true,
             ]);
         });
 
-        return $this->redirectToPos($request, ['tab' => 'transaksi'], 'Pembayaran tercatat.');
+        return $this->alihkanKePos($request, ['tab' => 'transaksi'], 'Pembayaran tercatat.');
     }
 
-    public function loadForPayment(Request $request, int $saleId)
+    public function muatUntukPembayaran(Request $request, int $idPenjualan)
     {
-        $sale = Sale::with('items')->find($saleId);
-        if (! $sale) {
+        $penjualan = Penjualan::with('daftarItem')->find($idPenjualan);
+        if (! $penjualan) {
             return back();
         }
 
-        $params = $this->makeQueryParams($request, [
+        $parameter = $this->buatParameterQuery($request, [
             'tab' => 'transaksi',
-            'editing' => $saleId,
-            'tx_date' => Carbon::parse($sale->date)->format('Y-m-d'),
-            'tx_name' => $sale->name,
-            'tx_note' => $sale->note ?? '',
+            'editing' => $idPenjualan,
+            'tx_date' => Carbon::parse($penjualan->tanggal)->format('Y-m-d'),
+            'tx_name' => $penjualan->nama,
+            'tx_note' => $penjualan->catatan ?? '',
             // transaksi tanpa tagihan (bayar hutang): pertahankan nilai paid lama supaya tetap bisa disimpan ulang;
             // untuk tagihan: isi dengan paid sekarang supaya edit menampilkan angka asli (input terakhir menang)
-            'tx_paid' => $sale->paid,
+            'tx_paid' => $penjualan->dibayar,
             'tx_paid_touched' => 1,
         ]);
 
-        foreach ($sale->items as $item) {
-            $params['qty_'.$item->product_id] = (float) $item->qty;
+        foreach ($penjualan->daftarItem as $itemPenjualan) {
+            $parameter['qty_'.$itemPenjualan->produk_id] = (float) $itemPenjualan->jumlah;
         }
 
-        return redirect()->route('pos', $params);
+        return redirect()->route('pos', $parameter);
     }
 
     /**
@@ -221,58 +221,58 @@ class TransaksiController extends Controller
      *   OFF → diff = rounded_total - paid - paid_kemarin (uang ikut mengurangi tagihan)
      * Tidak menyentuh customer_ledgers & is_paid_btn_clicked.
      */
-    public function toggleKemarin(Request $request, int $saleId)
+    public function alihkanKemarin(Request $request, int $idPenjualan)
     {
-        $sale = Sale::find($saleId);
-        if (! $sale) {
+        $penjualan = Penjualan::find($idPenjualan);
+        if (! $penjualan) {
             return response()->json(['ok' => false, 'error' => 'Transaksi tidak ditemukan.'], 404);
         }
 
-        $active = (bool) $request->input('active');
+        $aktif = (bool) $request->input('active');
 
-        DB::transaction(function () use ($sale, $active) {
-            $sale->kemarin_active = $active;
-            $sale->diff = $sale->rounded_total - $sale->paid - ($active ? 0 : $sale->paid_kemarin);
-            $sale->save();
+        DB::transaction(function () use ($penjualan, $aktif) {
+            $penjualan->kemarin_aktif = $aktif;
+            $penjualan->selisih = $penjualan->total_dibulatkan - $penjualan->dibayar - ($aktif ? 0 : $penjualan->dibayar_kemarin);
+            $penjualan->save();
         });
 
         return response()->json([
             'ok' => true,
-            'paid' => (int) $sale->paid,
-            'paid_kemarin' => (int) $sale->paid_kemarin,
-            'diff' => (int) $sale->diff,
+            'paid' => (int) $penjualan->dibayar,
+            'paid_kemarin' => (int) $penjualan->dibayar_kemarin,
+            'diff' => (int) $penjualan->selisih,
         ]);
     }
 
-    public function hapusTransaksi(Request $request, int $saleId)
+    public function hapusTransaksi(Request $request, int $idPenjualan)
     {
-        Sale::where('id', $saleId)->delete();
-        $params = $this->makeQueryParams($request, ['tab' => 'transaksi']);
-        unset($params['editing']);
+        Penjualan::where('id', $idPenjualan)->delete();
+        $parameter = $this->buatParameterQuery($request, ['tab' => 'transaksi']);
+        unset($parameter['editing']);
 
-        return redirect()->route('pos', $params)->with('success', 'Transaksi dihapus.');
+        return redirect()->route('pos', $parameter)->with('success', 'Transaksi dihapus.');
     }
 
-    public function simpanExpense(Request $request)
+    public function simpanPengeluaran(Request $request)
     {
-        $amount = parseRupiah($request->input('expAmount')); // aman terima "15.000" maupun "15000"
-        if ($amount <= 0) {
+        $jumlah = uraiRupiah($request->input('expAmount')); // aman terima "15.000" maupun "15000"
+        if ($jumlah <= 0) {
             return back()->withErrors(['expAmount' => 'Isi jumlah uang yang diambil.'])->withInput();
         }
-        Expense::create([
-            'date' => $request->input('expDate') ?: now()->toDateString(),
-            'amount' => $amount,
-            'note' => $request->input('expNote') ?: null,
+        Pengeluaran::create([
+            'tanggal' => $request->input('expDate') ?: now()->toDateString(),
+            'jumlah' => $jumlah,
+            'catatan' => $request->input('expNote') ?: null,
         ]);
 
-        return $this->redirectToPos($request, [
+        return $this->alihkanKePos($request, [
             'tab' => 'transaksi', 'exp_date' => $request->input('expDate') ?: now()->toDateString(),
         ], 'Pengeluaran dicatat.');
     }
 
-    public function hapusExpense(Request $request, int $id)
+    public function hapusPengeluaran(Request $request, int $id)
     {
-        Expense::where('id', $id)->delete();
+        Pengeluaran::where('id', $id)->delete();
 
         return back()->with('success', 'Pengeluaran dihapus.');
     }
@@ -280,69 +280,72 @@ class TransaksiController extends Controller
     /**
      * Catat metode input (speech/manual) + hasil parser untuk analisis akurasi & efisiensi.
      */
-    private function logInput(Request $request, int $saleId, string $name, ?string $note, array $items, int $roundedTotal, int $paid): void
+    private function catatInput(Request $request, int $idPenjualan, string $nama, ?string $catatan, array $daftarItem, int $totalDibulatkan, int $dibayar): void
     {
-        $note = (string) ($note ?? '');
-        $method = $request->input('input_method');
-        if (! $method) {
+        $catatan = (string) ($catatan ?? '');
+        $metode = $request->input('input_method');
+        if (! $metode) {
             return;
         }
 
         try {
-            $final = [
-                'name' => $name,
-                'note' => $note ?: null,
+            $akhir = [
+                'name' => $nama,
+                'note' => $catatan ?: null,
                 'qty' => [],
-                'paid' => $paid,
-                'total' => $roundedTotal,
+                'price' => [],
+                'paid' => $dibayar,
+                'total' => $totalDibulatkan,
             ];
-            foreach ($items as $item) {
-                $final['qty'][(string) $item['product']->id] = $item['qty'];
+            foreach ($daftarItem as $itemPenjualan) {
+                $idProduk = (string) $itemPenjualan['product']->id;
+                $akhir['qty'][$idProduk] = $itemPenjualan['qty'];
+                $akhir['price'][$idProduk] = (int) $itemPenjualan['product']->harga;
             }
 
-            $parsed = null;
-            $rawText = null;
-            $normalized = null;
-            $parsedInput = $request->input('input_parsed');
-            if ($parsedInput) {
-                $candidate = json_decode($parsedInput, true);
-                if (is_array($candidate)) {
-                    $parsed = $candidate;
-                    $rawText = $candidate['raw'] ?? null;
-                    $normalized = $candidate['normalized'] ?? null;
+            $hasilUrai = null;
+            $teksMentah = null;
+            $teksNormal = null;
+            $inputTerurai = $request->input('input_parsed');
+            if ($inputTerurai) {
+                $kandidat = json_decode($inputTerurai, true);
+                if (is_array($kandidat)) {
+                    $hasilUrai = $kandidat;
+                    $teksMentah = $kandidat['raw'] ?? null;
+                    $teksNormal = $kandidat['normalized'] ?? null;
                 }
             }
-            if (! $rawText) {
-                $rawText = $request->input('input_text');
+            if (! $teksMentah) {
+                $teksMentah = $request->input('input_text');
             }
 
-            $duration = $request->input('input_duration_ms');
-            $startedAt = $request->input('input_started_at');
+            $durasi = $request->input('input_duration_ms');
+            $mulaiPada = $request->input('input_started_at');
 
-            InputLog::create([
-                'method' => (string) $method,
+            CatatanInput::create([
+                'metode' => (string) $metode,
                 'tab' => 'transaksi',
-                'device' => mb_substr((string) $request->userAgent(), 0, 255),
-                'raw_text' => $rawText,
-                'normalized_text' => $normalized,
-                'parsed_json' => $parsed,
-                'final_json' => $final,
-                'match_json' => $parsed ? $this->compareParsed($parsed, $final) : null,
-                'duration_ms' => is_numeric($duration) ? (int) $duration : null,
-                'started_at' => $startedAt ? Carbon::parse($startedAt) : null,
-                'sale_id' => $saleId ?: null,
+                'perangkat' => mb_substr((string) $request->userAgent(), 0, 255),
+                'teks_mentah' => $teksMentah,
+                'teks_normal' => $teksNormal,
+                'json_urai' => $hasilUrai,
+                'json_akhir' => $akhir,
+                'json_cocok' => $hasilUrai ? $this->bandingkanHasilUrai($hasilUrai, $akhir) : null,
+                'durasi_ms' => is_numeric($durasi) ? (int) $durasi : null,
+                'mulai_pada' => $mulaiPada ? Carbon::parse($mulaiPada) : null,
+                'penjualan_id' => $idPenjualan ?: null,
                 'status' => 'ok',
             ]);
         } catch (\Throwable $e) {
             report($e);
             try {
-                InputLog::create([
-                    'method' => (string) $method,
+                CatatanInput::create([
+                    'metode' => (string) $metode,
                     'tab' => 'transaksi',
-                    'device' => mb_substr((string) $request->userAgent(), 0, 255),
-                    'raw_text' => $request->input('input_text'),
+                    'perangkat' => mb_substr((string) $request->userAgent(), 0, 255),
+                    'teks_mentah' => $request->input('input_text'),
                     'status' => 'error',
-                    'error' => mb_substr($e->getMessage(), 0, 1000),
+                    'kesalahan' => mb_substr($e->getMessage(), 0, 1000),
                 ]);
             } catch (\Throwable $ignored) {
                 // logging tidak boleh menggagalkan transaksi
@@ -351,53 +354,66 @@ class TransaksiController extends Controller
     }
 
     /** Bandingkan hasil parser dengan nilai akhir form (ground truth). */
-    private function compareParsed(array $parsed, array $final): array
+    private function bandingkanHasilUrai(array $hasilUrai, array $akhir): array
     {
-        $nameMatch = $this->sameText($parsed['name'] ?? null, $final['name']);
+        $cocokNama = $this->teksSama($hasilUrai['name'] ?? null, $akhir['name']);
 
-        $qtyMatch = [];
-        $parsedQty = [];
-        foreach (($parsed['items'] ?? []) as $item) {
-            $pid = (string) ($item['product_id'] ?? '');
-            if ($pid === '') {
+        $cocokJumlah = [];
+        $jumlahTerurai = [];
+        $hargaTerurai = [];
+        foreach (($hasilUrai['items'] ?? []) as $itemPenjualan) {
+            $idProduk = (string) ($itemPenjualan['product_id'] ?? '');
+            if ($idProduk === '') {
                 continue;
             }
-            $parsedQty[$pid] = ($parsedQty[$pid] ?? 0) + (float) ($item['qty'] ?? 0);
+            $jumlahTerurai[$idProduk] = ($jumlahTerurai[$idProduk] ?? 0) + (float) ($itemPenjualan['qty'] ?? 0);
+            $hargaTerurai[$idProduk] = (int) ($itemPenjualan['price'] ?? 0);
         }
-        $allPids = array_unique(array_merge(array_keys($parsedQty), array_keys($final['qty'])));
-        foreach ($allPids as $pid) {
-            $a = round($parsedQty[$pid] ?? 0, 3);
-            $b = round($final['qty'][$pid] ?? 0, 3);
-            $qtyMatch[$pid] = ['parsed' => $a, 'final' => $b, 'match' => $a === $b];
+        $semuaIdProduk = array_unique(array_merge(array_keys($jumlahTerurai), array_keys($akhir['qty'])));
+        foreach ($semuaIdProduk as $idProduk) {
+            $nilaiTerurai = round($jumlahTerurai[$idProduk] ?? 0, 3);
+            $nilaiAkhir = round($akhir['qty'][$idProduk] ?? 0, 3);
+            $cocokJumlah[$idProduk] = ['parsed' => $nilaiTerurai, 'final' => $nilaiAkhir, 'match' => $nilaiTerurai === $nilaiAkhir];
         }
 
-        $parsedNote = ($parsed['note'] ?? null) ?: null;
-        $finalNote = $final['note'];
-        $noteMatch = $this->sameText($parsedNote, $finalNote);
+        $cocokHarga = [];
+        foreach ($semuaIdProduk as $idProduk) {
+            $nilaiTerurai = (int) ($hargaTerurai[$idProduk] ?? 0);
+            $nilaiAkhir = (int) ($akhir['price'][$idProduk] ?? 0);
+            $cocokHarga[$idProduk] = ['parsed' => $nilaiTerurai, 'final' => $nilaiAkhir, 'match' => $nilaiTerurai === $nilaiAkhir];
+        }
 
-        $itemsCorrect = array_filter($qtyMatch, fn ($m) => $m['match']);
-        $itemAcc = count($allPids) > 0 ? count($itemsCorrect) / count($allPids) : ($nameMatch ? 1.0 : 0.0);
+        $catatanTerurai = ($hasilUrai['note'] ?? null) ?: null;
+        $catatanAkhir = $akhir['note'];
+        $cocokCatatan = $this->teksSama($catatanTerurai, $catatanAkhir);
+
+        $itemBenar = array_filter($cocokJumlah, fn ($m) => $m['match']);
+        $akurasiItem = count($semuaIdProduk) > 0 ? count($itemBenar) / count($semuaIdProduk) : ($cocokNama ? 1.0 : 0.0);
+        $hargaBenar = array_filter($cocokHarga, fn ($m) => $m['match']);
+        $akurasiHarga = count($semuaIdProduk) > 0 ? count($hargaBenar) / count($semuaIdProduk) : ($cocokNama ? 1.0 : 0.0);
 
         return [
-            'name_match' => $nameMatch,
-            'note_match' => $noteMatch,
-            'qty' => $qtyMatch,
-            'item_accuracy' => round($itemAcc, 4),
-            'overall' => $nameMatch && $noteMatch && $itemAcc >= 1.0,
+            'name_match' => $cocokNama,
+            'note_match' => $cocokCatatan,
+            'qty' => $cocokJumlah,
+            'price' => $cocokHarga,
+            'item_accuracy' => round($akurasiItem, 4),
+            'price_accuracy' => round($akurasiHarga, 4),
+            'overall' => $cocokNama && $cocokCatatan && $akurasiItem >= 1.0 && $akurasiHarga >= 1.0,
         ];
     }
 
     /** Bandingkan dua teks setelah dinormalisasi (huruf kecil + spasi rapat) — dipakai untuk nama & catatan. */
-    private function sameText(?string $a, ?string $b): bool
+    private function teksSama(?string $a, ?string $b): bool
     {
-        return $this->normText($a) === $this->normText($b);
+        return $this->normalisasiTeks($a) === $this->normalisasiTeks($b);
     }
 
-    private function normText(?string $value): string
+    private function normalisasiTeks(?string $nilai): string
     {
-        $value = mb_strtolower(trim((string) $value));
-        $value = preg_replace('/\s+/u', ' ', $value);
+        $nilai = mb_strtolower(trim((string) $nilai));
+        $nilai = preg_replace('/\s+/u', ' ', $nilai);
 
-        return (string) $value;
+        return (string) $nilai;
     }
 }

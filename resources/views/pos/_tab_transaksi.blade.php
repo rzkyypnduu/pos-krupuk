@@ -1,23 +1,24 @@
 @php
-    $totalKg = collect($txQty)->filter()->sum();
-    $rawTotal = 0;
-    foreach ($txQty as $pid => $qty) {
-        if ($qty && (float) $qty > 0) {
-            $p = $products->firstWhere('id', $pid);
-            if ($p)
-                $rawTotal += (float) $qty * $p->price;
+    $totalKilogram = collect($jumlahTransaksi)->filter()->sum();
+    $totalKotor = 0;
+    foreach ($jumlahTransaksi as $idProduk => $jumlah) {
+        if ($jumlah && (float) $jumlah > 0) {
+            $produk = $daftarProduk->firstWhere('id', $idProduk);
+            if ($produk)
+                $totalKotor += (float) $jumlah * $produk->harga;
         }
     }
-    $rawTotal = (int) round($rawTotal);
-    $roundedTotal = \App\Http\Controllers\PosController::roundTotal($rawTotal); // = JS recalcTotals() di bawah (lihat komentar di situ)
-    $paidParsed = $txPaidTouched ? parseRupiah($txPaid) : 0; // parser sama dengan TransaksiController::simpanTransaksi
-    $diff = $roundedTotal - $paidParsed;
+    $totalKotor = (int) round($totalKotor);
+    // Nilai awal; resources/js/pos/transaksi.js menghitung ulang saat input berubah.
+    $totalDibulatkan = bulatkanTotal($totalKotor);
+    $nilaiDibayar = $dibayarTransaksiDisentuh ? uraiRupiah($dibayarTransaksi) : 0;
+    $selisih = $totalDibulatkan - $nilaiDibayar;
 
-    $qParams = ['bulan' => $activeMonth, 'tab' => 'transaksi', 'tx_date' => $txDate];
-    $openForm = $showTxForm || $errors->has('txName') || $errors->has('txQty') || $errors->has('editing_sale_id');
-    $formParams = array_merge($qParams, request()->has('new') ? ['new' => 1] : []);
-    $newTxParams = ['bulan' => $activeMonth, 'tab' => 'transaksi', 'tx_date' => $txDate, 'new' => 1];
-    $txDateLabel = \Illuminate\Support\Carbon::parse($txDate)->locale('id')->isoFormat('dddd, D MMMM YYYY');
+    $parameterQuery = ['bulan' => $bulanAktif, 'tab' => 'transaksi', 'tx_date' => $tanggalTransaksi];
+    $formTerbuka = $tampilkanFormTransaksi || $errors->has('txName') || $errors->has('txQty') || $errors->has('editing_sale_id');
+    $parameterForm = array_merge($parameterQuery, request()->has('new') ? ['new' => 1] : []);
+    $parameterTransaksiBaru = ['bulan' => $bulanAktif, 'tab' => 'transaksi', 'tx_date' => $tanggalTransaksi, 'new' => 1];
+    $labelTanggalTransaksi = \Illuminate\Support\Carbon::parse($tanggalTransaksi)->locale('id')->isoFormat('dddd, D MMMM YYYY');
 @endphp
 
 {{-- Bagian 1: header tanggal, tabel transaksi hari ini, & form baru/edit (id #tx-baru) --}}
@@ -26,16 +27,16 @@
         <div class="tx-page-head">
             <div>
                 <h2>Transaksi Hari Ini</h2>
-                <p class="tx-page-date">{{ $txDateLabel }}</p>
+                <p class="tx-page-date">{{ $labelTanggalTransaksi }}</p>
             </div>
             <div class="tx-page-actions">
-                @unless($openForm)
-                    <a href="{{ route('pos', $newTxParams) }}#tx-baru" class="btn btn-primary">+ Transaksi Baru</a>
+                @unless($formTerbuka)
+                    <a href="{{ route('pos', $parameterTransaksiBaru) }}#tx-baru" class="btn btn-primary">+ Transaksi Baru</a>
                 @endunless
             </div>
         </div>
 
-        @if($openForm)
+        @if($formTerbuka)
             <div class="tx-form-card" id="tx-form-card">
                 <div class="tx-form-head">
                     <div class="tx-form-head-title">
@@ -50,7 +51,7 @@
                             </svg>
                             <span>Ucapkan pesanan</span>
                         </button>
-                        <a href="{{ route('pos', $qParams) }}" class="btn btn-outline-light">Tutup</a>
+                        <a href="{{ route('pos', $parameterQuery) }}" class="btn btn-outline-light">Tutup</a>
                     </div>
                 </div>
                 <div class="tx-speech-panel" id="txSpeechPanel" data-parse-url="{{ route('pos.speechParse') }}" hidden>
@@ -70,11 +71,13 @@
                 <div class="tx-form-body">
                     @error('editing_sale_id')
                     <div class="field-error" style="margin-bottom:10px;">{{ $message }}</div> @enderror
-                    <form method="POST" action="{{ route('pos.simpanTransaksi', $formParams) }}" id="txForm">
+                    <form method="POST" action="{{ route('pos.simpanTransaksi', $parameterForm) }}" id="txForm"
+                        data-total-dibulatkan="{{ (int) $totalDibulatkan }}"
+                        data-harga-produk="{{ $daftarProduk->pluck('harga', 'id')->toJson() }}">
                         @csrf
-                        <input type="hidden" name="txDate" value="{{ $txDate }}">
-                        <input type="hidden" name="editing_sale_id" value="{{ $editingSaleId }}">
-                        <input type="hidden" name="tx_paid_touched" value="{{ $txPaidTouched ? 1 : 0 }}" id="txPaidTouched">
+                        <input type="hidden" name="txDate" value="{{ $tanggalTransaksi }}">
+                        <input type="hidden" name="editing_sale_id" value="{{ $idPenjualanDiedit }}">
+                        <input type="hidden" name="tx_paid_touched" value="{{ $dibayarTransaksiDisentuh ? 1 : 0 }}" id="txPaidTouched">
                         <input type="hidden" name="input_method" id="inputMethod" value="manual">
                         <input type="hidden" name="input_text" id="inputText" value="">
                         <input type="hidden" name="input_parsed" id="inputParsed" value="">
@@ -84,8 +87,8 @@
                         <div class="tx-customer-row">
                             <div class="tx-name-field">
                                 <label for="txName">Nama pelanggan</label>
-                                <input type="text" id="txName" name="txName" value="{{ $txName }}" list="customerNames"
-                                    placeholder="Cari nama..." oninput="document.getElementById('txPaidTouched').value='1'">
+                                <input type="text" id="txName" name="txName" value="{{ $namaTransaksi }}" list="customerNames"
+                                    placeholder="Cari nama...">
                                 @error('txName')
                                 <div class="field-error">{{ $message }}</div> @enderror
                             </div>
@@ -95,27 +98,26 @@
                             <div class="form-group-label"
                                 style="font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);">
                                 Jumlah per produk (kg)</div>
-                            @if ($products->isEmpty())
+                            @if ($daftarProduk->isEmpty())
                                 <div class="empty">Tambahkan produk dulu di tab Master Produk.</div>
                             @else
                                 <div class="tx-product-grid">
-                                    @foreach ($products as $product)
-                                        @php $qtyVal = $txQty[$product->id] ?? null; @endphp
-                                        <div class="product-card {{ $qtyVal && (float) $qtyVal > 0 ? 'has-qty' : '' }}">
-                                            <div class="product-card-name">{{ $product->name }}</div>
+                                    @foreach ($daftarProduk as $produk)
+                                        @php $nilaiJumlah = $jumlahTransaksi[$produk->id] ?? null; @endphp
+                                        <div class="product-card {{ $nilaiJumlah && (float) $nilaiJumlah > 0 ? 'has-qty' : '' }}">
+                                            <div class="product-card-name">{{ $produk->nama }}</div>
                                             <div class="product-card-input">
-                                                <button type="button" class="qty-btn" data-qty-step="qtyInput{{ $product->id }}"
+                                                <button type="button" class="qty-btn" data-qty-step="qtyInput{{ $produk->id }}"
                                                     data-delta="-0.5" aria-label="Kurangi">&minus;</button>
-                                                <input type="text" inputmode="decimal" step="0.5" id="qtyInput{{ $product->id }}"
-                                                    name="qty[{{ $product->id }}]"
-                                                    value="{{ $qtyVal && (float) $qtyVal > 0 ? str_replace('.', ',', (string) $qtyVal) : '' }}"
-                                                    class="qty-input" placeholder="0" data-product-id="{{ $product->id }}"
-                                                    oninput="this.closest('.product-card').classList.toggle('has-qty', this.value !== '' && parseFloat(this.value.replace(',','.')) > 0); recalcTotals();">
-                                                <button type="button" class="qty-btn" data-qty-step="qtyInput{{ $product->id }}"
+                                                <input type="text" inputmode="decimal" step="0.5" id="qtyInput{{ $produk->id }}"
+                                                    name="qty[{{ $produk->id }}]"
+                                                    value="{{ $nilaiJumlah && (float) $nilaiJumlah > 0 ? str_replace('.', ',', (string) $nilaiJumlah) : '' }}"
+                                                    class="qty-input" placeholder="0" data-product-id="{{ $produk->id }}">
+                                                <button type="button" class="qty-btn" data-qty-step="qtyInput{{ $produk->id }}"
                                                     data-delta="0.5" aria-label="Tambah">+</button>
                                             </div>
-                                            @if($product->price && $qtyVal && (float) $qtyVal > 0)
-                                                <div class="product-card-subtotal">{{ rupiah($product->price * $qtyVal) }}</div>
+                                            @if($produk->harga && $nilaiJumlah && (float) $nilaiJumlah > 0)
+                                                <div class="product-card-subtotal">{{ rupiah($produk->harga * $nilaiJumlah) }}</div>
                                             @endif
                                         </div>
                                     @endforeach
@@ -128,15 +130,15 @@
                         <div class="tx-totals-bar">
                             <div class="tx-total-stat">
                                 <div class="label">Total kg</div>
-                                <div class="value" id="totalKgDisplay">{{ fmtKg($totalKg) }} kg</div>
+                                <div class="value" id="totalKgDisplay">{{ tampilkanKilogram($totalKilogram) }} kg</div>
                             </div>
                             <div class="tx-total-stat">
                                 <div class="label">Belanja (asli)</div>
-                                <div class="value" id="rawTotalDisplay">{{ rupiah($rawTotal) }}</div>
+                                <div class="value" id="rawTotalDisplay">{{ rupiah($totalKotor) }}</div>
                             </div>
                             <div class="tx-total-stat highlight">
                                 <div class="label">Tagihan</div>
-                                <div class="value" id="roundedTotalDisplay">{{ rupiah($roundedTotal) }}</div>
+                                <div class="value" id="roundedTotalDisplay">{{ rupiah($totalDibulatkan) }}</div>
                             </div>
                         </div>
 
@@ -144,37 +146,35 @@
                             <div class="tx-paid-group">
                                 <label for="txPaid">Dibayar (Rp)</label>
                                 <div class="input-group">
-                                    <input type="text" id="txPaid" name="tx_paid" inputmode="numeric" value="{{ $txPaid }}"
+                                    <input type="text" id="txPaid" name="tx_paid" inputmode="numeric" value="{{ $dibayarTransaksi }}"
                                         data-money
-                                        placeholder="0"
-                                        oninput="document.getElementById('txPaidTouched').value='1'; updateStatus()">
-                                    <button type="button" class="pas-btn"
-                                        onclick="var p=document.getElementById('txPaid'); p.value='{{ $roundedTotal }}'; p.dispatchEvent(new Event('input', {bubbles:true}));">Pas</button>
+                                        placeholder="0">
+                                    <button type="button" class="pas-btn" data-pas>Pas</button>
                                 </div>
                             </div>
                             <div class="tx-status-group">
                                 <div class="form-group-label">Status</div>
-                                <div class="status-box {{ !$txPaidTouched ? 'debt' : ($diff > 0 ? 'debt' : ($diff < 0 ? 'paid' : 'zero')) }}"
+                                <div class="status-box {{ !$dibayarTransaksiDisentuh ? 'debt' : ($selisih > 0 ? 'debt' : ($selisih < 0 ? 'paid' : 'zero')) }}"
                                     id="statusBox">
-                                    @if(!$txPaidTouched) Belum dibayar: {{ rupiah($roundedTotal) }}
-                                    @elseif($diff > 0) Kurang {{ rupiah($diff) }}
-                                    @elseif($diff < 0) Lebih {{ rupiah(-$diff) }}
+                                    @if(!$dibayarTransaksiDisentuh) Belum dibayar: {{ rupiah($totalDibulatkan) }}
+                                    @elseif($selisih > 0) Kurang {{ rupiah($selisih) }}
+                                    @elseif($selisih < 0) Lebih {{ rupiah(-$selisih) }}
                                     @else Lunas &#10003; @endif
                                 </div>
                             </div>
                         </div>
 
                         <div class="tx-note" style="margin-top:12px;">
-                            <input type="text" name="tx_note" value="{{ $txNote }}" placeholder="Catatan (opsional)">
+                            <input type="text" name="tx_note" value="{{ $catatanTransaksi }}" placeholder="Catatan (opsional)">
                         </div>
 
-                        @if($editingSaleId)
-                            @php $editSale = $sales->firstWhere('id', $editingSaleId); @endphp
-                            @if($editSale)
+                        @if($idPenjualanDiedit)
+                            @php $penjualanDiedit = $daftarPenjualan->firstWhere('id', $idPenjualanDiedit); @endphp
+                            @if($penjualanDiedit)
                                 <div class="tx-edit-banner">
-                                    Mode bayar: <strong>{{ $editSale->name }}</strong> &mdash;
-                                    {{ $editSale->date->format('Y-m-d') }}
-                                    <a href="{{ route('pos', array_merge($qParams, ['tab' => 'transaksi'])) }}"
+                                    Mode bayar: <strong>{{ $penjualanDiedit->nama }}</strong> &mdash;
+                                    {{ $penjualanDiedit->tanggal->format('Y-m-d') }}
+                                    <a href="{{ route('pos', array_merge($parameterQuery, ['tab' => 'transaksi'])) }}"
                                         class="btn btn-outline-secondary" style="margin-left:auto;text-decoration:none;">Batal</a>
                                 </div>
                             @endif
@@ -182,7 +182,7 @@
 
                         <div class="tx-actions">
                             <button type="submit"
-                                class="btn btn-primary">{{ $editingSaleId ? 'Simpan pembayaran' : 'Simpan transaksi' }}</button>
+                                class="btn btn-primary">{{ $idPenjualanDiedit ? 'Simpan pembayaran' : 'Simpan transaksi' }}</button>
                         </div>
                     </form>
                 </div>
@@ -203,48 +203,48 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($sales as $tx)
-                        <tr data-pay-row="{{ $tx->id }}">
-                            <td>{{ $tx->name }}</td>
+                    @forelse ($daftarPenjualan as $transaksi)
+                        <tr data-pay-row="{{ $transaksi->id }}">
+                            <td>{{ $transaksi->nama }}</td>
                             <td style="font-size:19px;line-height:1.6;">
-                                @foreach($tx->items as $item)
-                                    <div>{{ $item->name }}: {{ fmtKg($item->qty) }} kg</div>
+                                @foreach($transaksi->daftarItem as $itemPenjualan)
+                                    <div>{{ $itemPenjualan->nama }}: {{ tampilkanKilogram($itemPenjualan->jumlah) }} kg</div>
                                 @endforeach
                             </td>
-                            <td class="num">{{ fmtKg($tx->items->sum('qty')) }}</td>
-                            <td class="num">{{ rupiah($tx->rounded_total) }}</td>
+                            <td class="num">{{ tampilkanKilogram($transaksi->daftarItem->sum('jumlah')) }}</td>
+                            <td class="num">{{ rupiah($transaksi->total_dibulatkan) }}</td>
                             <td class="num" data-pay-paid
-                                title="{{ 'Bayar kemarin ' . rupiah($tx->paid_kemarin) . ' + hari ini ' . rupiah($tx->paid) }}">{{ rupiah($tx->paid + $tx->paid_kemarin) }}</td>
+                                title="{{ 'Bayar kemarin ' . rupiah($transaksi->dibayar_kemarin) . ' + hari ini ' . rupiah($transaksi->dibayar) }}">{{ rupiah($transaksi->dibayar + $transaksi->dibayar_kemarin) }}</td>
                             <td>
                                 <div class="status-stack">
-                                    <span class="badge {{ $tx->diff > 0 ? 'debt' : ($tx->diff < 0 ? 'paid' : 'zero') }}"
-                                        data-pay-badge>{{ $tx->diff > 0 ? 'Kurang ' . rupiah($tx->diff) : ($tx->diff < 0 ? 'Lebih ' . rupiah(-$tx->diff) : 'Lunas') }}</span>
-                                    <span class="badge paid-outline{{ $tx->kemarin_active ? '' : ' d-none' }}"
+                                    <span class="badge {{ $transaksi->selisih > 0 ? 'debt' : ($transaksi->selisih < 0 ? 'paid' : 'zero') }}"
+                                        data-pay-badge>{{ $transaksi->selisih > 0 ? 'Kurang ' . rupiah($transaksi->selisih) : ($transaksi->selisih < 0 ? 'Lebih ' . rupiah(-$transaksi->selisih) : 'Lunas') }}</span>
+                                    <span class="badge paid-outline{{ $transaksi->kemarin_aktif ? '' : ' d-none' }}"
                                         data-pay-kbadge title="Sebagian uang dipakai membayar hutang sebelumnya">Bayar
-                                        kemarin {{ rupiah($tx->paid_kemarin) }}</span>
+                                        kemarin {{ rupiah($transaksi->dibayar_kemarin) }}</span>
                                 </div>
                             </td>
                             <td>
                                 <div class="row-actions">
                                     <button type="button"
-                                        class="btn {{ $tx->is_paid_btn_clicked ? 'btn-outline-secondary' : 'btn-success' }}"
-                                        title="Buka modal pembayaran {{ $tx->name }}"
-                                        data-pay-open="{{ $tx->id }}">Bayar</button>
-                                    <label class="ck-kemarin{{ $tx->kemarin_active ? ' on' : '' }}"
+                                        class="btn {{ $transaksi->tombol_bayar_diklik ? 'btn-outline-secondary' : 'btn-success' }}"
+                                        title="Buka modal pembayaran {{ $transaksi->nama }}"
+                                        data-pay-open="{{ $transaksi->id }}">Bayar</button>
+                                    <label class="ck-kemarin{{ $transaksi->kemarin_aktif ? ' on' : '' }}"
                                         title="Aktifkan bila pembeli juga membayar hutang sebelumnya">
-                                        <input type="checkbox" id="ckKmr{{ $tx->id }}" data-pay-ck="{{ $tx->id }}"
-                                            @checked($tx->kemarin_active)>
+                                        <input type="checkbox" id="ckKmr{{ $transaksi->id }}" data-pay-ck="{{ $transaksi->id }}"
+                                            @checked($transaksi->kemarin_aktif)>
                                         <span>Bayar kemarin</span>
                                     </label>
-                                    <form method="POST" action="{{ route('pos.loadForPayment', $tx->id) }}"
+                                    <form method="POST" action="{{ route('pos.loadForPayment', $transaksi->id) }}"
                                         style="display:inline;">
                                         @csrf
                                         <button type="submit" class="btn btn-outline-secondary"
                                             title="Edit transaksi">Edit</button>
                                     </form>
-                                    <form method="POST" action="{{ route('pos.hapusTransaksi', $tx->id) }}"
+                                    <form method="POST" action="{{ route('pos.hapusTransaksi', $transaksi->id) }}"
                                         style="display:inline;"
-                                        data-confirm="Hapus transaksi {{ $tx->name }} ini? Riwayat hutang tidak akan dihapus.">
+                                        data-confirm="Hapus transaksi {{ $transaksi->nama }} ini? Riwayat hutang tidak akan dihapus.">
                                         @csrf
                                         <button type="submit" class="btn btn-outline-danger">Hapus</button>
                                     </form>
@@ -265,9 +265,9 @@
     {{-- Bagian 2: pengeluaran laci (kas keluar harian) --}}
     <div class="card">
         <h2>Pengeluaran Laci</h2>
-        <form method="POST" action="{{ route('pos.simpanExpense', $qParams) }}" class="tx-expense-form">
+        <form method="POST" action="{{ route('pos.simpanExpense', $parameterQuery) }}" class="tx-expense-form">
             @csrf
-            <input type="hidden" name="expDate" value="{{ $txDate }}">
+            <input type="hidden" name="expDate" value="{{ $tanggalTransaksi }}">
             <input type="text" inputmode="numeric" name="expAmount" data-money min="0" placeholder="Jumlah (Rp)" style="flex:2;">
             <input type="text" name="expNote" placeholder="Keperluan" style="flex:3;">
             <button type="submit" class="btn btn-dark">Simpan</button>
@@ -284,12 +284,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($dayExpenses as $e)
+                    @forelse ($daftarPengeluaranHari as $pengeluaran)
                         <tr>
-                            <td>{{ $e->note ?? '-' }}</td>
-                            <td class="num">{{ rupiah($e->amount) }}</td>
+                            <td>{{ $pengeluaran->catatan ?? '-' }}</td>
+                            <td class="num">{{ rupiah($pengeluaran->jumlah) }}</td>
                             <td style="text-align:right;">
-                                <form method="POST" action="{{ route('pos.hapusExpense', $e->id) }}" style="display:inline;"
+                                <form method="POST" action="{{ route('pos.hapusExpense', $pengeluaran->id) }}" style="display:inline;"
                                     data-confirm="Hapus pengeluaran ini?">
                                     @csrf
                                     <button type="submit" class="btn btn-outline-danger btn-sm">Hapus</button>
@@ -317,10 +317,10 @@
             <div class="tx-summ-block">
                 <div class="lbl">Kg terjual per produk</div>
                 <div style="margin-top:6px;font-size:14px;">
-                    @forelse ($recapPerProduct as $prodName => $kg)
+                    @forelse ($rekapPerProduk as $namaProduk => $kilogram)
                         <div style="display:flex;justify-content:space-between;padding:2px 0;">
-                            <span>{{ $prodName }}</span>
-                            <span class="num">{{ fmtKg($kg) }} kg</span>
+                            <span>{{ $namaProduk }}</span>
+                            <span class="num">{{ tampilkanKilogram($kilogram) }} kg</span>
                         </div>
                     @empty
                         <span class="num">0 kg</span>
@@ -328,19 +328,19 @@
                     <div
                         style="display:flex;justify-content:space-between;padding:2px 0;border-top:1px solid var(--line);margin-top:4px;padding-top:6px;font-weight:700;">
                         <span>Total</span>
-                        <span class="num">{{ fmtKg($recapTotals['kg']) }} kg</span>
+                        <span class="num">{{ tampilkanKilogram($totalRekap['kg']) }} kg</span>
                     </div>
                     <div class="tx-summ-row">
                         <span>Diterima</span>
-                        <span class="num green">{{ rupiah($recapTotals['dibayar']) }}</span>
+                        <span class="num green">{{ rupiah($totalRekap['dibayar']) }}</span>
                     </div>
                     <div class="tx-summ-row">
                         <span>Pengeluaran</span>
-                        <span class="num red">&minus;{{ rupiah($recapTotals['pengeluaran']) }}</span>
+                        <span class="num red">&minus;{{ rupiah($totalRekap['pengeluaran']) }}</span>
                     </div>
                     <div class="tx-summ-row kas">
                         <span>Kas bersih</span>
-                        <span class="num green">{{ rupiah($recapTotals['kas_bersih']) }}</span>
+                        <span class="num green">{{ rupiah($totalRekap['kas_bersih']) }}</span>
                     </div>
                 </div>
             </div>
@@ -351,17 +351,17 @@
     <div class="card">
         <button type="button" class="recap-toggle" data-bs-toggle="collapse" data-bs-target="#recapBulan"
             aria-expanded="true" aria-controls="recapBulan">
-            <h2 style="margin-bottom:0;">Ringkasan Bulan ({{ $monthLabel }})</h2>
+            <h2 style="margin-bottom:0;">Ringkasan Bulan ({{ $labelBulan }})</h2>
             <span style="font-size:13px;color:var(--ink-soft);" aria-hidden="true">&#9650;</span>
         </button>
         <div class="collapse show" id="recapBulan" style="margin-top:14px;">
             <div class="tx-summ-block">
                 <div class="lbl">Kg terjual per produk</div>
                 <div style="margin-top:6px;font-size:14px;">
-                    @forelse ($recapBulanPerProduct as $prodName => $kg)
+                    @forelse ($rekapBulanPerProduk as $namaProduk => $kilogram)
                         <div style="display:flex;justify-content:space-between;padding:2px 0;">
-                            <span>{{ $prodName }}</span>
-                            <span class="num">{{ fmtKg($kg) }} kg</span>
+                            <span>{{ $namaProduk }}</span>
+                            <span class="num">{{ tampilkanKilogram($kilogram) }} kg</span>
                         </div>
                     @empty
                         <span class="num">0 kg</span>
@@ -369,19 +369,19 @@
                     <div
                         style="display:flex;justify-content:space-between;padding:2px 0;border-top:1px solid var(--line);margin-top:4px;padding-top:6px;font-weight:700;">
                         <span>Total</span>
-                        <span class="num">{{ fmtKg($recapBulanTotals['kg']) }} kg</span>
+                        <span class="num">{{ tampilkanKilogram($totalRekapBulan['kg']) }} kg</span>
                     </div>
                     <div class="tx-summ-row">
                         <span>Diterima</span>
-                        <span class="num green">{{ rupiah($recapBulanTotals['dibayar']) }}</span>
+                        <span class="num green">{{ rupiah($totalRekapBulan['dibayar']) }}</span>
                     </div>
                     <div class="tx-summ-row">
                         <span>Pengeluaran</span>
-                        <span class="num red">&minus;{{ rupiah($recapBulanTotals['pengeluaran']) }}</span>
+                        <span class="num red">&minus;{{ rupiah($totalRekapBulan['pengeluaran']) }}</span>
                     </div>
                     <div class="tx-summ-row kas">
                         <span>Kas bersih</span>
-                        <span class="num green">{{ rupiah($recapBulanTotals['kas_bersih']) }}</span>
+                        <span class="num green">{{ rupiah($totalRekapBulan['kas_bersih']) }}</span>
                     </div>
                 </div>
             </div>
@@ -389,41 +389,8 @@
     </div>
 </div>
 
-{{-- Bagian 5: JS live — updateStatus (parsing Dibayar, pasangan parseRupiah) &
-recalcTotals (pembulatan, pasangan PosHelpers::roundTotal — lihat komentar di dalamnya) --}}
-<script>
-    function updateStatus() {
-        var paid = document.getElementById('txPaid').value;
-        // parse = parseRupiah() di PHP; parseInt di sini membuang desimal (input rupiah tanpa desimal)
-        var paidNum = paid ? parseInt(String(paid).replace(/\./g, '').replace(',', '.')) : 0;
-        var rounded = {{ $roundedTotal }};
-        var diff = rounded - paidNum;
-        var box = document.getElementById('statusBox');
-        if (diff > 0) { box.className = 'status-box debt'; box.innerHTML = 'Kurang ' + formatRupiah(diff); }
-        else if (diff < 0) { box.className = 'status-box paid'; box.innerHTML = 'Lebih ' + formatRupiah(-diff); }
-        else { box.className = 'status-box zero'; box.innerHTML = 'Lunas &#10003;'; }
-    }
-    function formatRupiah(n) { return 'Rp' + Number(n).toLocaleString('id-ID'); }
-    function recalcTotals() {
-        var inputs = document.querySelectorAll('[data-product-id]');
-        var prices = {!! $products->pluck('price', 'id')->toJson() !!};
-        var totalKg = 0, rawTotal = 0;
-        inputs.forEach(function (inp) {
-            var pid = inp.getAttribute('data-product-id');
-            var v = parseFloat(inp.value.replace(',', '.')) || 0;
-            if (v > 0) { totalKg += v; rawTotal += v * (prices[pid] || 0); }
-        });
-        rawTotal = Math.round(rawTotal);
-        // aturan pembulatan yang sama dengan PosHelpers::roundTotal (PHP) — ubah dua tempat
-        var thousands = Math.floor(rawTotal / 1000) * 1000;
-        var remainder = rawTotal - thousands;
-        var rounded = remainder < 500 ? thousands : thousands + 1000;
-        document.getElementById('totalKgDisplay').textContent = fmtKgJs(totalKg) + ' kg';
-        document.getElementById('rawTotalDisplay').textContent = formatRupiah(rawTotal);
-        document.getElementById('roundedTotalDisplay').textContent = formatRupiah(rounded);
-        document.getElementById('statusBox').innerHTML = 'Belum dibayar: ' + formatRupiah(rounded);
-        document.getElementById('statusBox').className = 'status-box debt';
-    }
-</script>
-{{-- Speech-to-text: browser (pos-speech.js di bundle Vite) -> route pos.speech ->
-SpeechController::parseSpeech -> SpeechParser (rule-based) -> hasil diisi ke form. --}}
+
+{{-- Status pembayaran dan total dihitung ulang oleh resources/js/pos/transaksi.js
+     saat qty atau nominal Dibayar berubah. --}}
+{{-- Speech-to-text: browser (resources/js/pos/suara.js di bundle Vite) -> route pos.speech ->
+UcapanController::parseSpeech -> PenguraiUcapan (rule-based) -> hasil diisi ke form. --}}

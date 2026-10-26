@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\PosHelpers;
-use App\Models\OilStock;
-use App\Models\StockManagement;
-use App\Models\StockRemaining;
+use App\Http\Controllers\Concerns\BantuanPos;
+use App\Models\ManajemenStok;
+use App\Models\SisaStok;
+use App\Models\StokMinyak;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -16,161 +16,189 @@ use Illuminate\Support\Carbon;
  */
 class StokHasilController extends Controller
 {
-    use PosHelpers;
+    use BantuanPos;
 
     // ---------- Stok minyak ----------
 
-    public function simpanOil(Request $request)
+    public function simpanStokMinyak(Request $request)
     {
         if (! $request->input('oilQty')) {
             return back()->withErrors(['oilQty' => 'Isi jumlah dulu.'])->withInput();
         }
         // Satu nilai stok minyak per tanggal — simpan menimpa nilai lama.
-        $date = $this->activeDate($request);
-        OilStock::where('date', $date)->delete();
-        OilStock::create([
-            'date' => $date,
-            'qty' => $request->input('oilQty'),
-            'price' => parseRupiah($request->input('oilPrice')), // aman terima "15.000"
+        $tanggal = $this->tanggalAktif($request);
+        StokMinyak::where('tanggal', $tanggal)->delete();
+        StokMinyak::create([
+            'tanggal' => $tanggal,
+            'jumlah' => $request->input('oilQty'),
+            'harga' => uraiRupiah($request->input('oilPrice')), // aman terima "15.000"
         ]);
 
-        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Stok minyak disimpan.');
+        return $this->alihkanKePos($request, ['tab' => 'hasil'], 'Stok minyak disimpan.');
     }
 
-    public function hapusOil(Request $request)
+    public function hapusStokMinyak(Request $request)
     {
-        OilStock::where('date', $this->activeDate($request))->delete();
+        StokMinyak::where('tanggal', $this->tanggalAktif($request))->delete();
 
         return back()->with('success', 'Stok minyak dihapus.');
     }
 
     // ---------- Manajemen stok barang ----------
 
-    public function simpanStockMgmt(Request $request)
+    public function simpanManajemenStok(Request $request)
     {
         $stockMgmtNameInput = $request->input('stockMgmtName', '');
-        $name = is_string($stockMgmtNameInput) ? trim($stockMgmtNameInput) : '';
-        if (! $name) {
+        $nama = is_string($stockMgmtNameInput) ? trim($stockMgmtNameInput) : '';
+        if (! $nama) {
             return back()->withErrors(['stockMgmtName' => 'Isi nama dulu.'])->withInput();
         }
-        $sacks = json_decode($request->input('stockMgmtSacks') ?: '[]', true);
-        if (! is_array($sacks)) {
-            $sacks = [];
+        $karung = json_decode($request->input('stockMgmtSacks') ?: '[]', true);
+        if (! is_array($karung)) {
+            $karung = [];
         }
-        $sacks = array_values(array_filter($sacks, fn ($v) => is_numeric($v) && (float) $v > 0));
-        if (empty($sacks)) {
+        $karung = array_values(array_filter($karung, fn ($v) => is_numeric($v) && (float) $v > 0));
+        if (empty($karung)) {
             return back()->withErrors(['stockMgmtSacks' => 'Isi minimal satu karung.'])->withInput();
         }
-        $qty = array_sum($sacks);
-        $date = $this->activeDate($request);
-        $price = parseRupiah($request->input('stockMgmtPrice')); // aman terima "15.000"
-        $batch = ['id' => uniqid(), 'date' => $date, 'price' => $price, 'sacks' => $sacks];
+        $jumlah = array_sum($karung);
+        $tanggal = $this->tanggalAktif($request);
+        $harga = uraiRupiah($request->input('stockMgmtPrice')); // aman terima "15.000"
+        $kelompok = ['id' => uniqid(), 'date' => $tanggal, 'price' => $harga, 'sacks' => $karung];
 
-        $existing = StockManagement::whereRaw('LOWER(name) = ?', [strtolower($name)])->first();
-        if ($existing) {
-            $batches = $existing->batches ?? [];
-            $batches[] = $batch;
-            $existing->update(['batches' => $batches, 'price' => $price ?: $existing->price, 'date' => $date]);
+        $yangAda = ManajemenStok::whereRaw('LOWER(nama) = ?', [strtolower($nama)])->first();
+        if ($yangAda) {
+            $daftarKelompok = $yangAda->kelompok ?? [];
+            $daftarKelompok[] = $kelompok;
+            $yangAda->update(['kelompok' => $daftarKelompok, 'harga' => $harga ?: $yangAda->harga, 'tanggal' => $tanggal]);
         } else {
-            StockManagement::create([
-                'date' => $date, 'name' => $name, 'qty' => $qty, 'price' => $price,
-                'batches' => [$batch],
+            ManajemenStok::create([
+                'tanggal' => $tanggal, 'nama' => $nama, 'jumlah' => $jumlah, 'harga' => $harga,
+                'kelompok' => [$kelompok],
             ]);
         }
 
-        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Stok barang ditambahkan.');
+        return $this->alihkanKePos($request, ['tab' => 'hasil'], 'Stok barang ditambahkan.');
     }
 
-    public function hapusStockMgmt(Request $request, int $id)
+    public function hapusManajemenStok(Request $request, int $id)
     {
-        StockManagement::where('id', $id)->delete();
+        ManajemenStok::where('id', $id)->delete();
 
         return back()->with('success', 'Data stok dihapus.');
     }
 
     /** Simpan ulang daftar kg per sak dari edit inline tabel (mode Excel). */
-    public function updateStockMgmtSacks(Request $request, int $id)
+    public function perbaruiKarungManajemenStok(Request $request, int $id)
     {
-        $row = StockManagement::find($id);
-        if (! $row) {
+        $baris = ManajemenStok::find($id);
+        if (! $baris) {
             return response()->json(['ok' => false, 'message' => 'Data tidak ditemukan.'], 404);
         }
-        $input = $request->input('sacks');
-        $sacks = [];
-        foreach (is_array($input) ? $input : [] as $value) {
-            $qty = static::parseDecimal($value);
-            if ($qty !== null && $qty > 0) {
-                $sacks[] = $qty;
+        $masukan = $request->input('sacks');
+        $karung = [];
+        foreach (is_array($masukan) ? $masukan : [] as $nilai) {
+            $jumlah = static::uraiDesimal($nilai);
+            if ($jumlah !== null && $jumlah > 0) {
+                $karung[] = $jumlah;
             }
         }
-        $total = array_sum($sacks);
-        $price = (int) $row->price;
-        $row->update([
-            'qty' => $total,
-            'batches' => [[
-                'id' => $row->batches[0]['id'] ?? uniqid(),
-                'date' => Carbon::parse($row->date)->toDateString(),
-                'price' => $price,
-                'sacks' => $sacks,
+        $total = array_sum($karung);
+        $harga = (int) $baris->harga;
+        $baris->update([
+            'jumlah' => $total,
+            'kelompok' => [[
+                'id' => $baris->kelompok[0]['id'] ?? uniqid(),
+                'date' => Carbon::parse($baris->tanggal)->toDateString(),
+                'price' => $harga,
+                'sacks' => $karung,
             ]],
         ]);
 
         return response()->json([
             'ok' => true,
-            'sacks' => $row->batches[0]['sacks'] ?? [],
+            'sacks' => $baris->kelompok[0]['sacks'] ?? [],
             'totalQty' => $total,
-            'subtotal' => $row->subtotal(),
+            'price' => $baris->harga,
+            'subtotal' => $baris->subtotal(),
+        ]);
+    }
+
+    /** Simpan harga per kg untuk seluruh kelompok milik satu pemegang stok. */
+    public function perbaruiHargaManajemenStok(Request $request, int $id)
+    {
+        $baris = ManajemenStok::find($id);
+        if (! $baris) {
+            return response()->json(['ok' => false, 'message' => 'Data tidak ditemukan.'], 404);
+        }
+
+        $harga = max(0, uraiRupiah($request->input('price')));
+        $kelompok = $baris->kelompok ?? [];
+        foreach ($kelompok as &$bagian) {
+            $bagian['price'] = $harga;
+        }
+        unset($bagian);
+
+        $baris->update([
+            'harga' => $harga,
+            'kelompok' => $kelompok,
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'price' => $baris->harga,
+            'subtotal' => $baris->subtotal(),
         ]);
     }
 
     // ---------- Sisa barang ----------
 
-    public function simpanRemain(Request $request)
+    public function simpanSisaStok(Request $request)
     {
-        $name = trim((string) $request->input('remainName', ''));
-        if ($name === '') {
+        $nama = trim((string) $request->input('remainName', ''));
+        if ($nama === '') {
             return back()->withErrors(['remainName' => 'Isi nama produk dulu.'])->withInput();
         }
         if ($request->input('remainQty') === null || $request->input('remainQty') === '') {
             return back()->withErrors(['remainQty' => 'Isi jumlah dulu.'])->withInput();
         }
-        StockRemaining::create([
-            'date' => $this->activeDate($request),
-            'name' => $name,
-            'qty' => $request->input('remainQty'),
-            'price' => parseRupiah($request->input('remainPrice')), // aman terima "15.000"
+        SisaStok::create([
+            'tanggal' => $this->tanggalAktif($request),
+            'nama' => $nama,
+            'jumlah' => $request->input('remainQty'),
+            'harga' => uraiRupiah($request->input('remainPrice')), // aman terima "15.000"
         ]);
 
-        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Sisa barang ditambahkan.');
+        return $this->alihkanKePos($request, ['tab' => 'hasil'], 'Sisa barang ditambahkan.');
     }
 
     /** Simpan edit inline (mode Excel) untuk satu baris sisa barang. */
-    public function updateRemain(Request $request, int $id)
+    public function perbaruiSisaStok(Request $request, int $id)
     {
-        $row = StockRemaining::find($id);
-        if (! $row) {
+        $baris = SisaStok::find($id);
+        if (! $baris) {
             return response()->json(['ok' => false, 'message' => 'Data tidak ditemukan.'], 404);
         }
-        $name = trim((string) $request->input('name', ''));
-        if ($name !== '') {
-            $row->name = $name;
+        $nama = trim((string) $request->input('name', ''));
+        if ($nama !== '') {
+            $baris->nama = $nama;
         }
-        $row->qty = static::parseDecimal($request->input('qty')) ?? 0;
-        $row->price = max(0, parseRupiah($request->input('price'))); // aman terima "15.000"
-        $row->save();
+        $baris->jumlah = static::uraiDesimal($request->input('qty')) ?? 0;
+        $baris->harga = max(0, uraiRupiah($request->input('price'))); // aman terima "15.000"
+        $baris->save();
 
         return response()->json([
             'ok' => true,
-            'name' => $row->name,
-            'qty' => $row->qty,
-            'price' => $row->price,
-            'subtotal' => $row->subtotal(),
+            'name' => $baris->nama,
+            'qty' => $baris->jumlah,
+            'price' => $baris->harga,
+            'subtotal' => $baris->subtotal(),
         ]);
     }
 
-    public function hapusRemain(Request $request, int $id)
+    public function hapusSisaStok(Request $request, int $id)
     {
-        StockRemaining::where('id', $id)->delete();
+        SisaStok::where('id', $id)->delete();
 
         return back()->with('success', 'Sisa barang dihapus.');
     }

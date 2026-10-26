@@ -161,6 +161,7 @@
 #pos-root .sack-cell:hover { border-color: var(--line-strong); }
 #pos-root .sack-cell:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px rgba(193, 39, 45, .1); }
 #pos-root .sack-cell::placeholder { color: var(--ink-mute); font-family: inherit; }
+#pos-root .mgmt-price-input { width: 110px; }
 #pos-root .cell-edit {
     padding: 6px 8px; font-size: 14px; border: 1px solid transparent;
     border-radius: 6px; background: transparent;
@@ -189,7 +190,7 @@
 #pos-root #hpSummaryTable .hp-name-cell:hover .hp-name { border-bottom-color: var(--ink-mute); }
 #pos-root #hpSummaryTable .hp-cell { position: relative; cursor: pointer; padding: 6px 10px; }
 #pos-root #hpSummaryTable .hp-cell.empty-cell { cursor: default; text-align: center; color: var(--ink-mute); padding: 6px 10px; }
-#pos-root #hpSummaryTable .hp-debt-cell:hover, #pos-root #hpSummaryTable .hp-total-cell:hover { background: var(--fill); }
+#pos-root #hpSummaryTable .hp-debt-cell:hover { background: var(--fill); }
 #pos-root #hpSummaryTable .hp-inp {
     display: none; width: 100%; box-sizing: border-box; border: 1px solid var(--accent);
     border-radius: 4px; padding: 3px 6px; font-family: var(--mono); font-size: 13px;
@@ -221,7 +222,7 @@
 #pos-root .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 #pos-root .field-error { color: var(--debt); font-size: 13px; margin-top: 4px; font-weight: 600; }
 
-// Bagian: modal Bayar, tombol status bayar, ceklis "bayar kemarin" (pos-pay.js)
+// Bagian: modal Bayar, tombol status bayar, ceklis "bayar kemarin" (pos-pembayaran.js)
 #pos-root .pay-confirm-head { padding: 18px 22px; color: #FFFFFF; background: linear-gradient(135deg, #7F1416, #C1272D); }
 #pos-root .pay-confirm-head h2 { font-size: 20px; color: #FFFFFF; }
 #pos-root .pay-confirm-head p { margin: 4px 0 0; font-size: 14px; color: rgba(255, 255, 255, .85); }

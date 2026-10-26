@@ -2,54 +2,54 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\PosHelpers;
-use App\Models\Product;
+use App\Http\Controllers\Concerns\BantuanPos;
+use App\Models\Produk;
 use Illuminate\Http\Request;
 
 /** Tab Produk: daftar harga, tambah/ubah/hapus produk, dan data contoh. */
 class ProdukController extends Controller
 {
-    use PosHelpers;
+    use BantuanPos;
 
     public function simpanProduk(Request $request)
     {
         $request->validate(['prodName' => 'required|string|max:255'], ['prodName.required' => 'Isi nama produk dulu.']);
-        Product::create(['name' => $request->input('prodName'), 'price' => parseRupiah($request->input('prodPrice'))]);
+        Produk::create(['nama' => $request->input('prodName'), 'harga' => uraiRupiah($request->input('prodPrice'))]);
 
-        return $this->redirectToPos($request, ['tab' => 'produk'], 'Produk ditambahkan.');
+        return $this->alihkanKePos($request, ['tab' => 'produk'], 'Produk ditambahkan.');
     }
 
     public function ubahHarga(Request $request, int $id)
     {
         // "15.000" dinormalisasi ke 15000; nilai bukan angka tetap ditolak validasi.
-        $price = $request->input('price');
-        if (is_string($price) && preg_match('/^[\d.\s]+$/', trim($price))) {
-            $request->merge(['price' => parseRupiah($price)]);
+        $harga = $request->input('price');
+        if (is_string($harga) && preg_match('/^[\d.\s]+$/', trim($harga))) {
+            $request->merge(['price' => uraiRupiah($harga)]);
         }
         // Kosong = 0 (harga direset); nilai bukan angka tetap ditolak.
         $request->validate(['price' => 'nullable|integer|min:0'], ['price.integer' => 'Harga harus angka.']);
-        Product::where('id', $id)->update(['price' => (int) ($request->input('price') ?? 0)]);
+        Produk::where('id', $id)->update(['harga' => (int) ($request->input('price') ?? 0)]);
 
         return back()->with('success', 'Harga diubah.');
     }
 
     public function hapusProduk(Request $request, int $id)
     {
-        Product::where('id', $id)->delete();
+        Produk::where('id', $id)->delete();
 
-        return $this->redirectToPos($request, ['tab' => 'produk'], 'Produk dihapus.');
+        return $this->alihkanKePos($request, ['tab' => 'produk'], 'Produk dihapus.');
     }
 
-    public function seedProduk(Request $request)
+    public function isiProdukAwal(Request $request)
     {
-        $names = ['Kuning', 'Lempeng', 'Kabur', 'Flowning', 'Gelung', 'Kecil OM', 'Kecil MJ', 'PJO', 'Kecil 2', 'TG', 'TG Mini', 'Drg', 'Lj', 'Uren', 'TM'];
-        $existing = Product::pluck('name')->map(fn ($n) => strtolower($n))->all();
-        foreach ($names as $name) {
-            if (! in_array(strtolower($name), $existing, true)) {
-                Product::create(['name' => $name, 'price' => 0]);
+        $daftarNama = ['Kuning', 'Lempeng', 'Kabur', 'Flowning', 'Gelung', 'Kecil OM', 'Kecil MJ', 'PJO', 'Kecil 2', 'TG', 'TG Mini', 'Drg', 'Lj', 'Uren', 'TM'];
+        $yangAda = Produk::pluck('nama')->map(fn ($n) => strtolower($n))->all();
+        foreach ($daftarNama as $nama) {
+            if (! in_array(strtolower($nama), $yangAda, true)) {
+                Produk::create(['nama' => $nama, 'harga' => 0]);
             }
         }
 
-        return $this->redirectToPos($request, ['tab' => 'produk'], 'Contoh produk ditambahkan.');
+        return $this->alihkanKePos($request, ['tab' => 'produk'], 'Contoh produk ditambahkan.');
     }
 }

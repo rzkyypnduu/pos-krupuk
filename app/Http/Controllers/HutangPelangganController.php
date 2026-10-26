@@ -2,28 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\PosHelpers;
-use App\Models\CustomerLedger;
-use App\Services\HutangService;
+use App\Http\Controllers\Concerns\BantuanPos;
+use App\Models\BukuPelanggan;
+use App\Services\ServiceHutang;
 use Illuminate\Http\Request;
 
 /**
- * Rekap hutang per pelanggan (grid Excel di tab Hasil):
- * tambah entri, edit sel/total via JSON, hapus per sel atau per baris,
- * dan ganti nama pelanggan. Perhitungan sisa (pecahan hutang) ada di HutangService.
+ * Rekap hutang per pelanggan di tab Hasil.
+ *
+ * Tabel menampilkan hutang aktif per pelanggan yang diurutkan berdasarkan nama.
+ * Pengguna dapat menambah entri, mengedit nominal hutang, dan menghapus entri
+ * atau baris. Total ditampilkan dari perhitungan sisa di ServiceHutang.
  */
 class HutangPelangganController extends Controller
 {
-    use PosHelpers;
+    use BantuanPos;
 
-    public function __construct(private HutangService $hutang) {}
+    public function __construct(private ServiceHutang $hutang) {}
 
     public function simpanHutangPelanggan(Request $request)
     {
         // "15.000" dinormalisasi ke 15000; nilai bukan angka tetap ditolak validasi.
-        $amt = $request->input('debtModalAmount');
-        if (is_string($amt) && preg_match('/^[\d.\s]+$/', trim($amt))) {
-            $request->merge(['debtModalAmount' => parseRupiah($amt)]);
+        $jumlah = $request->input('debtModalAmount');
+        if (is_string($jumlah) && preg_match('/^[\d.\s]+$/', trim($jumlah))) {
+            $request->merge(['debtModalAmount' => uraiRupiah($jumlah)]);
         }
         $request->validate([
             'debtModalName' => 'required|string|max:255',
@@ -32,133 +34,100 @@ class HutangPelangganController extends Controller
             'debtModalName.required' => 'Isi nama pelanggan.',
             'debtModalAmount.required' => 'Isi jumlah hutang.',
         ]);
-        CustomerLedger::create([
-            'date' => $request->input('debtModalDate') ?: now()->toDateString(),
-            'sheet_date' => $this->activeDate($request),
-            'name' => $request->input('debtModalName'),
-            'amount' => $request->input('debtModalAmount'),
-            'type' => 'tambah',
-            'note' => $request->input('debtModalNote') ?: 'Tambah hutang manual',
+        BukuPelanggan::create([
+            'tanggal' => $request->input('debtModalDate') ?: now()->toDateString(),
+            'tanggal_lembar' => $this->tanggalAktif($request),
+            'nama' => $request->input('debtModalName'),
+            'jumlah' => $request->input('debtModalAmount'),
+            'jenis' => 'tambah',
+            'catatan' => $request->input('debtModalNote') ?: 'Tambah hutang manual',
         ]);
 
-        return $this->redirectToPos($request, ['tab' => 'hasil'], 'Hutang ditambahkan.');
+        return $this->alihkanKePos($request, ['tab' => 'hasil'], 'Hutang ditambahkan.');
     }
 
-    public function hapusLedgerEntry(Request $request, int $id)
+    public function hapusEntriBukuPelanggan(Request $request, int $id)
     {
-        $entry = CustomerLedger::find($id);
-        if (! $entry) {
+        $entri = BukuPelanggan::find($id);
+        if (! $entri) {
             return $request->expectsJson()
                 ? response()->json(['ok' => false, 'message' => 'Entri tidak ditemukan.'], 404)
                 : back();
         }
-        $name = $entry->name;
-        $entry->delete();
+        $nama = $entri->nama;
+        $entri->delete();
         if ($request->expectsJson()) {
-            $proc = $this->hutang->processCustomerDebts($name, $this->activeDate($request));
+            $prosesHutang = $this->hutang->prosesHutangPelanggan($nama, $this->tanggalAktif($request));
 
-            return $this->debtJson($proc);
+            return $this->jsonHutang($prosesHutang);
         }
 
         return back()->with('success', 'Entri dihapus.');
     }
 
-    public function renameCustomer(Request $request)
+    public function gantiNamaPelanggan(Request $request)
     {
-        $old = trim((string) $request->input('old_name'));
-        $new = trim((string) $request->input('new_name'));
-        if ($old === '' || $new === '') {
+        $namaLama = trim((string) $request->input('old_name'));
+        $namaBaru = trim((string) $request->input('new_name'));
+        if ($namaLama === '' || $namaBaru === '') {
             return response()->json(['ok' => false, 'message' => 'Nama tidak boleh kosong.'], 422);
         }
-        if ($old !== $new) {
-            if (CustomerLedger::where('name', $new)->exists()) {
-                return response()->json(['ok' => false, 'message' => 'Nama "'.$new.'" sudah dipakai pelanggan lain.'], 422);
+        if ($namaLama !== $namaBaru) {
+            if (BukuPelanggan::where('nama', $namaBaru)->exists()) {
+                return response()->json(['ok' => false, 'message' => 'Nama "'.$namaBaru.'" sudah dipakai pelanggan lain.'], 422);
             }
-            CustomerLedger::where('name', $old)->update(['name' => $new]);
+            BukuPelanggan::where('nama', $namaLama)->update(['nama' => $namaBaru]);
         }
 
-        return response()->json(['ok' => true, 'name' => $new]);
+        return response()->json(['ok' => true, 'name' => $namaBaru]);
     }
 
-    public function hapusCustomerLedger(Request $request, string $name)
+    public function hapusBukuPelanggan(Request $request, string $nama)
     {
-        $this->scopedCustomerLedgers($this->activeDate($request))
-            ->where('name', $name)->delete();
+        $this->bukuPelangganLingkup($this->tanggalAktif($request))
+            ->where('nama', $nama)->delete();
 
         return back()->with('success', 'Riwayat hutang dihapus.');
     }
 
-    public function adjustDebtCell(Request $request)
+    public function sesuaikanSelHutang(Request $request)
     {
-        $debtId = $request->input('debt_id');
-        $newRemaining = max(0, parseRupiah($request->input('new_remaining'))); // aman terima "15.000"
-        $sheetDate = $this->activeDate($request);
+        $idHutang = $request->input('debt_id');
+        // Input kosong dianggap 0; nilai berformat "15.000" juga diterima.
+        $sisaBaru = max(0, uraiRupiah($request->input('new_remaining')));
+        $tanggalLembar = $this->tanggalAktif($request);
 
-        $entry = CustomerLedger::find($debtId);
-        if (! $entry) {
+        $entri = BukuPelanggan::find($idHutang);
+        if (! $entri) {
             return $request->expectsJson()
                 ? response()->json(['ok' => false, 'message' => 'Entri tidak ditemukan.'], 404)
                 : back();
         }
 
-        // Sisa yang tampil = amount entri − pembayaran pecahan yang sudah menimpanya.
-        // Saat user mengedit sisa, pembayaran yang sudah berjalan dipertahankan —
-        // amount disesuaikan supaya sisa baru persis nilai yang dimasukkan.
-        $current = collect($this->hutang->processCustomerDebts($entry->name, $sheetDate)['activeDebts'])
-            ->firstWhere('id', $entry->id);
-        $remainingBefore = $current['remaining'] ?? 0;
-        $paidPortion = $entry->amount - $remainingBefore;
-        $entry->update(['amount' => max($newRemaining + $paidPortion, 0)]);
+        // Sisa tampil = jumlah entri dikurangi pengurang yang sudah tercatat.
+        // Saat pengguna mengedit sisa, pengurang yang sudah ada dipertahankan;
+        // jumlah entri disesuaikan agar sisa baru sama dengan nilai input.
+        $current = collect($this->hutang->prosesHutangPelanggan($entri->nama, $tanggalLembar)['activeDebts'])
+            ->firstWhere('id', $entri->id);
+        $sisaSebelum = $current['remaining'] ?? 0;
+        $bagianDibayar = $entri->jumlah - $sisaSebelum;
+        $entri->update(['jumlah' => max($sisaBaru + $bagianDibayar, 0)]);
 
-        $proc = $this->hutang->processCustomerDebts($entry->name, $sheetDate);
+        $prosesHutang = $this->hutang->prosesHutangPelanggan($entri->nama, $tanggalLembar);
         if ($request->expectsJson()) {
-            return $this->debtJson($proc);
+            return $this->jsonHutang($prosesHutang);
         }
 
         return back()->with('success', 'Hutang disesuaikan.');
     }
 
-    public function adjustTotalDebt(Request $request)
-    {
-        // "15.000" dinormalisasi ke 15000; nilai bukan angka tetap ditolak validasi.
-        $total = $request->input('new_total');
-        if (is_string($total) && preg_match('/^[\d.\s]+$/', trim($total))) {
-            $request->merge(['new_total' => parseRupiah($total)]);
-        }
-        $request->validate([
-            'name' => 'required|string',
-            'new_total' => 'required|integer|min:0',
-        ]);
-        $name = $request->input('name');
-        $newTotal = (int) $request->input('new_total');
-        $sheetDate = $this->activeDate($request);
-        $current = $this->hutang->processCustomerDebts($name, $sheetDate)['totalSisa'];
-        $diff = $newTotal - $current;
-        if ($diff !== 0) {
-            CustomerLedger::create([
-                'date' => $sheetDate,
-                'sheet_date' => $sheetDate,
-                'name' => $name,
-                'amount' => abs($diff),
-                'type' => $diff > 0 ? 'tambah' : 'bayar',
-                'note' => 'Penyesuaian manual saldo hutang',
-            ]);
-        }
-        $proc = $this->hutang->processCustomerDebts($name, $sheetDate);
-        if ($request->expectsJson()) {
-            return $this->debtJson($proc);
-        }
-
-        return back()->with('success', 'Total hutang disesuaikan.');
-    }
-
     /** Respons JSON standar edit hutang: daftar entri aktif + total sisa (dipakai JS klien). */
-    private function debtJson(array $proc)
+    private function jsonHutang(array $prosesHutang)
     {
         return response()->json([
             'ok' => true,
-            'activeDebts' => $proc['activeDebts'],
-            'totalSisa' => $proc['totalSisa'],
+            'activeDebts' => $prosesHutang['activeDebts'],
+            'totalSisa' => $prosesHutang['totalSisa'],
         ]);
     }
 }

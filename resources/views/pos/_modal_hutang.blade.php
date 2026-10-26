@@ -1,22 +1,22 @@
-{{-- Modal tambah hutang pelanggan — tampil saat $debtModalOpen (dibuka dari tab Hasil);
+{{-- Modal tambah hutang pelanggan — tampil saat $modalHutangTerbuka (dibuka dari tab Hasil);
      POST → HutangPelangganController::simpanHutangPelanggan. Bootstrap 5 modal;
      saat ditutup (Esc/backdrop), URL dibersihkan dari param debt_modal agar bisa dibuka lagi. --}}
-@if($debtModalOpen)
+@if($modalHutangTerbuka)
     @php
-        $debtCloseUrl = route('pos', ['bulan' => $activeMonth, 'tx_date' => $txDate, 'tab' => 'hasil']);
+        $urlTutupHutang = route('pos', ['bulan' => $bulanAktif, 'tx_date' => $tanggalTransaksi, 'tab' => 'hasil']);
     @endphp
-    <div class="modal fade" id="debtModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-debt-close-url="{{ $debtCloseUrl }}">
+    <div class="modal fade" id="debtModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-debt-close-url="{{ $urlTutupHutang }}">
         <div class="modal-dialog modal-dialog-centered">
-            <form class="modal-content" method="POST" action="{{ route('pos.simpanHutangPelanggan', ['bulan' => $activeMonth, 'tx_date' => $txDate, 'tab' => 'hasil']) }}">
+            <form class="modal-content" method="POST" action="{{ route('pos.simpanHutangPelanggan', ['bulan' => $bulanAktif, 'tx_date' => $tanggalTransaksi, 'tab' => 'hasil']) }}">
                 @csrf
                 <div class="modal-header">
-                    <h2 class="modal-title fs-5">{{ $debtModalName ? 'Tambah hutang — ' . $debtModalName : 'Tambah hutang pelanggan' }}</h2>
+                    <h2 class="modal-title fs-5">{{ $namaModalHutang ? 'Tambah hutang — ' . $namaModalHutang : 'Tambah hutang pelanggan' }}</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <div class="modal-body">
                     <div class="field">
                         <label for="debtModalName">Nama pelanggan</label>
-                        <input id="debtModalName" type="text" name="debtModalName" value="{{ $debtModalName }}" required placeholder="Contoh: Mut">
+                        <input id="debtModalName" type="text" name="debtModalName" value="{{ $namaModalHutang }}" required placeholder="Contoh: Mut">
                         @error('debtModalName') <div class="field-error">{{ $message }}</div> @enderror
                     </div>
                     <div class="field">

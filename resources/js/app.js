@@ -4,9 +4,18 @@ import { Modal, Collapse, Toast } from 'bootstrap';
 // supaya modul POS lain bisa memakainya tanpa import berulang.
 window.bootstrap = { Modal, Collapse, Toast };
 
-// Modul POS — sebelumnya file statis di public/js/, kini masuk bundle Vite.
-import './pos-ui.js';
-import './pos-pay.js';
-import './pos-scroll.js';
-import './pos-speech.js';
-import './chart-init.js';
+import './pos/antarmuka.js';
+import './pos/pembayaran.js';
+import './pos/transaksi.js';
+import './pos/suara.js';
+import './pos/hasil/minyak.js';
+import './pos/hasil/manajemen-stok.js';
+import './pos/hasil/sisa-stok.js';
+import './pos/hasil/hutang-pelanggan.js';
+import './pos/hasil/hutang-pribadi.js';
+
+// Chart.js dan pengurutan pelanggan hanya dimuat saat tab Ringkasan punya canvas grafik.
+if (document.getElementById('chartHarian')) {
+    import('./pos/grafik.js');
+    import('./pos/ringkasan.js');
+}

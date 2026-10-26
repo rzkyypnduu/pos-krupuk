@@ -12,8 +12,8 @@ class ExampleTest extends TestCase
      */
     public function test_root_redirects_to_pos(): void
     {
-        $response = $this->get('/');
+        $respons = $this->get('/');
 
-        $response->assertRedirect(route('pos'));
+        $respons->assertRedirect(route('pos'));
     }
 }

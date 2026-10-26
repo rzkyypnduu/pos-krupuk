@@ -42,24 +42,34 @@ Buka `http://127.0.0.1:8000` (atau vhost Laragon) — `/` mengarah ke tab Transa
 
 ```
 app/
-  Http/Controllers/        → endpoint POS (per tab/fitur)
-    Concerns/PosHelpers.php → helper tanggal, parameter URL, rounding
-  Models/                  → 13 model Eloquent
+  Http/Controllers/          endpoint POS per tab/fitur
+    Concerns/BantuanPos.php  helper tanggal, parameter URL, pembulatan
+  Models/                    model Eloquent (Produk, Penjualan, BukuPelanggan, dll.)
   Services/
-    HasilSheetService.php  → lembar hasil: salin-tempel sekali per tanggal
-    HutangService.php      → perhitungan sisa hutang pelanggan (pecahan hutang)
-    SpeechParser.php       → parser rule-based untuk speech-to-text
-  Support/helpers.php      → rupiah(), parseRupiah(), fmtKg()
-bootstrap/                 → app & routing (Laravel 11+ style)
-config/                    → konfigurasi framework
-database/migrations/       → skema: sales, expenses, products, ledgers, dll
+    ServiceDataHalamanPos.php  query & data halaman POS
+    ServiceHutang.php          perhitungan sisa hutang pelanggan
+    ServiceLembarHasil.php     lembar hasil salin-tempel per tanggal
+    ServiceResetData.php       reset bulan/semua data
+    PenguraiUcapan.php         parser rule-based speech-to-text
+  Support/helpers.php        rupiah(), uraiRupiah(), tampilkanKilogram()
+bootstrap/                   app & routing (Laravel 11+ style)
+config/                      konfigurasi framework
+database/migrations/         skema Indonesia: penjualan, item_penjualan, produk, dll.
 resources/
-  css/app.scss             → variabel tema + import Bootstrap + pos.scss
-  css/pos.scss             → seluruh gaya khas POS (#pos-root scope)
-  js/                      → entry Vite + modul POS (pos-ui/pay/scroll/speech, chart-init)
-  views/pos/               → index + 4 partial tab + 2 modal
-routes/web.php             → route dikelompokkan prefix pos.*
-tests/Feature|Unit         → test fitur & unit
+  css/app.scss               variabel tema + import Bootstrap + pos.scss
+  css/pos.scss               seluruh gaya khas POS (#pos-root scope)
+  js/app.js                  entry Vite
+  js/pos/format.js           format rupiah, kg, angka
+  js/pos/http.js             fetch JSON/form + CSRF
+  js/pos/antarmuka.js        confirm, qty, toast, input uang, scroll
+  js/pos/pembayaran.js       modal pembayaran
+  js/pos/suara.js            speech-to-text
+  js/pos/grafik.js           Chart.js (dimuat hanya di tab Ringkasan)
+  js/pos/hasil/              modul minyak, manajemen stok, sisa stok,
+                             hutang pelanggan, hutang pribadi
+  views/pos/                 index + 4 partial tab + 2 modal + partial hasil/
+routes/web.php               route dikelompokkan prefix pos.*
+tests/Feature|Unit           test fitur & unit
 ```
 
 ## Speech-to-text
